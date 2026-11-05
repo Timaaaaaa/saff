@@ -834,7 +834,7 @@ function setupRec() {
   const nick = people[TI][0];
   // ключевые моменты (с), подогнаны под озвучку
   const B = { down: 5.5, type: 10.7, pick: 12.6, close: 19.6, rise: 23.6 };
-  const crowd = TI + 160; // чужой человек во 2–3 кольце для кадра «в толпе»
+  const crowd = TI > 400 ? 300 : TI + 160; // чужой человек во 2–3 кольце для кадра «в толпе»
   let stage = 0, sheetOpenAt = -1, sheetCloseAt = -1, orbitA0 = 0;
   const orbit = (a, r = 58, y = 44) => ({ pos: new THREE.Vector3(Math.sin(a) * r, y, Math.cos(a) * r), look: new THREE.Vector3(0, 1, 0) });
   const origOpen = openLetter;
