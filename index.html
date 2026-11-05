@@ -126,6 +126,15 @@
   .loading.done { opacity: 0; pointer-events: none; }
   @media (min-width: 760px) { .sheet { padding-bottom: 24px; } }
   .grab { display: none; }
+  .donate { width: 100%; margin-top: 8px; border-color: rgba(184,138,46,.45); color: #7A5A12; }
+  .dn { position: fixed; inset: 0; z-index: 40; display: none; align-items: flex-end; justify-content: center; background: rgba(10,8,20,.55); padding: 0 12px max(12px, env(safe-area-inset-bottom)); }
+  .dn.on { display: flex; }
+  .dn-card { width: 100%; max-width: 480px; background: var(--paper); color: var(--paper-ink); border-radius: 20px; padding: 22px 20px 18px; position: relative; border: 1px solid #E8D9B8; }
+  .dn-card h3 { font: 700 22px/1.25 var(--serif); margin: 0 0 8px; padding-right: 30px; }
+  .dn-card p { font: 400 14.5px/1.5 var(--sans); color: var(--paper-muted); margin: 0 0 14px; }
+  .dn-card .store { margin-top: 8px; }
+  .dn-kaspi { background: #F14635 !important; }
+  @media (min-width: 561px) { .dn { align-items: center; } }
   @media (max-width: 560px) {
     .top { padding: max(10px, env(safe-area-inset-top)) 12px 0; }
     .count { font-size: 11px; margin-bottom: 6px; }
@@ -173,6 +182,14 @@
 
 <div class="sheet" id="sheet">
   <article class="letter" id="letter"></article>
+</div>
+<div class="dn" id="dn">
+  <div class="dn-card">
+    <button class="close" id="dnClose" aria-label="Закрыть">×</button>
+    <h3>Поддержать авторов</h3>
+    <p>Всё здесь бесплатно, и твоё письмо остаётся твоим в любом случае. Этот двор, ролики и письма мы делаем сами, без рекламы. Если хочешь, чтобы выходили новые выпуски, можешь отправить любую сумму. Только по желанию.</p>
+    <div id="dnLinks"></div>
+  </div>
 </div>
 <div class="toast" id="toast"></div>
 <div class="loading" id="loading">Собираемся вокруг Каабы…</div>
@@ -223,6 +240,8 @@ function track(event_type, props = {}) {
 /* ================= данные и кольца ================= */
 const people = await fetch('people.json').then(r => r.json()); // [uniqueId, nickname, src]
 const N = people.length;
+const DONATE = await fetch('donate.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({}));
+const hasDonate = !!(DONATE.kaspi || DONATE.other);
 const fmt = (n) => n.toLocaleString('ru-RU');
 document.getElementById('count').textContent = `Вокруг Каабы · ${fmt(N)} человек`;
 document.getElementById('introN').textContent = `${fmt(N)} человек`;
@@ -601,6 +620,7 @@ function letterHTML(i) {
         <button class="soft" id="shareBtn">Поделиться</button>
         <button class="soft" id="lookBtn">Идти вместе</button>
       </div>
+      ${hasDonate ? '<button class="soft donate" id="donateBtn">Поддержать авторов</button>' : ''}
     </div>
     <p class="fine">Не хочешь быть здесь? Напиши нам в TikTok @quran.widget.app, уберём.</p>`;
 }
@@ -621,8 +641,22 @@ function openLetter(i) {
   document.getElementById('closeLetter').onclick = closeLetter;
   document.getElementById('lookBtn').onclick = closeLetter;
   document.getElementById('shareBtn').onclick = () => share(i);
+  const db = document.getElementById('donateBtn');
+  if (db) db.onclick = openDonate;
   letter.querySelectorAll('[data-store]').forEach(a => a.addEventListener('click', () => track('saff_store_tap', { store: a.dataset.store })));
 }
+const dn = document.getElementById('dn');
+function openDonate() {
+  const L = [];
+  if (DONATE.kaspi) L.push(`<a class="store dn-kaspi" href="${esc(DONATE.kaspi)}" target="_blank" rel="noopener" data-dn="kaspi">Kaspi · Казахстан</a>`);
+  if (DONATE.other) L.push(`<a class="store" href="${esc(DONATE.other)}" target="_blank" rel="noopener" data-dn="other">Другие страны · картой</a>`);
+  document.getElementById('dnLinks').innerHTML = L.join('');
+  document.querySelectorAll('[data-dn]').forEach(a => a.addEventListener('click', () => track('saff_donate_tap', { via: a.dataset.dn })));
+  dn.classList.add('on');
+  track('saff_donate_open', {});
+}
+document.getElementById('dnClose').onclick = () => dn.classList.remove('on');
+dn.addEventListener('click', (e) => { if (e.target === dn) dn.classList.remove('on'); });
 function closeLetter() { sheet.classList.remove('on'); controls.enabled = true; liftTo = 0; }
 const toastEl = document.getElementById('toast');
 function toast(t) { toastEl.textContent = t; toastEl.classList.add('on'); setTimeout(() => toastEl.classList.remove('on'), 2200); }
