@@ -126,6 +126,9 @@
   .loading.done { opacity: 0; pointer-events: none; }
   @media (min-width: 760px) { .sheet { padding-bottom: 24px; } }
   .grab { display: none; }
+  html.rec * { transition: none !important; }
+  html.rec .sheet.on { transform: none; }
+  .search input.recfocus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(233,196,106,.25); }
   .donate { width: 100%; margin-top: 8px; border-color: rgba(184,138,46,.45); color: #7A5A12; }
   .dn { position: fixed; inset: 0; z-index: 40; display: none; align-items: flex-end; justify-content: center; background: rgba(10,8,20,.55); padding: 0 12px max(12px, env(safe-area-inset-bottom)); }
   .dn.on { display: flex; }
@@ -232,7 +235,7 @@ if (webview) document.documentElement.dataset.webview = '1';
 let deviceId = 'web-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
 try { const s = localStorage.getItem('saff_did'); if (s) deviceId = s; else localStorage.setItem('saff_did', deviceId); } catch (e) {}
 function track(event_type, props = {}) {
-  if (!AMP_KEY || /^(127\.0\.0\.1|localhost)$/.test(location.hostname)) return;
+  if (!AMP_KEY || REC || /^(127\.0\.0\.1|localhost)$/.test(location.hostname)) return;
   try {
     fetch('https://api2.amplitude.com/2/httpapi', {
       method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
@@ -270,8 +273,12 @@ const polar = new Float32Array(N * 4); // r, угол старта, углова
   }
 }
 const RINGS = ring[N - 1] + 1, R_MAX = R0 + (RINGS - 1) * DR;
-const T0 = performance.now();
-const now = () => (performance.now() - T0) / 1000;
+// ?rec=1 — режим записи ролика: время идёт по кадрам (window.__frame), без rAF и CSS-переходов
+const REC = new URLSearchParams(location.search).has('rec');
+let recMs = 0;
+const clock = () => REC ? recMs : performance.now();
+const T0 = clock();
+const now = () => (clock() - T0) / 1000;
 // где человек сейчас: x, z и угол (против часовой, вид сверху)
 function where(i, t, out) {
   const th = polar[i * 4 + 1] + polar[i * 4 + 2] * t, r = polar[i * 4];
@@ -283,7 +290,7 @@ function where(i, t, out) {
 const canvas = document.getElementById('scene');
 const isMobile = matchMedia('(pointer: coarse)').matches || innerWidth < 760;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: devicePixelRatio < 2, powerPreference: 'high-performance' });
-let dpr = Math.min(devicePixelRatio, isMobile ? 1.25 : 2);
+let dpr = new URLSearchParams(location.search).has('rec') ? 2 : Math.min(devicePixelRatio, isMobile ? 1.25 : 2);
 renderer.setPixelRatio(dpr);
 window.__saff = { renderer, get level() { return level; } };
 renderer.setSize(innerWidth, innerHeight, false);
@@ -373,7 +380,7 @@ for (let k = 0; k < 9; k++) {
 }
 const tower = new THREE.Group();
 const tBody = new THREE.Mesh(new THREE.BoxGeometry(14, 70, 14), new THREE.MeshStandardMaterial({ color: '#D9C9A8', roughness: 0.8 })); tBody.position.y = 35; tower.add(tBody);
-const clock = new THREE.Mesh(new THREE.CircleGeometry(4.5, 32), new THREE.MeshStandardMaterial({ color: '#F4F1E8', emissive: '#5FA36E', emissiveIntensity: 0.5 })); clock.position.set(0, 60, 7.05); tower.add(clock);
+const clockFace = new THREE.Mesh(new THREE.CircleGeometry(4.5, 32), new THREE.MeshStandardMaterial({ color: '#F4F1E8', emissive: '#5FA36E', emissiveIntensity: 0.5 })); clockFace.position.set(0, 60, 7.05); tower.add(clockFace);
 const spire = new THREE.Mesh(new THREE.ConeGeometry(4, 26, 8), goldMat); spire.position.y = 83; tower.add(spire);
 tower.position.set(-25, 0, -120); scene.add(tower);
 const rockMat = new THREE.MeshStandardMaterial({ color: '#9A6E4C', roughness: 1, flatShading: true });
@@ -402,7 +409,7 @@ const strip = (g) => { g.deleteAttribute('uv'); return g.index ? g.toNonIndexed(
 // белые одежды ихрама, голова покрыта тканью; лиц нет. Человек смотрит в -z.
 // Телефон: толпа из ~1 900 человек — главная нагрузка. Там одна низкополигональная модель (~110 треугольников вместо ~1 050),
 // без кистей и теней и на дешёвом освещении Lambert. Найденный человек всегда в полной детализации.
-const LOW = isMobile;
+const LOW = isMobile && !REC;
 const robeLow = mergeGeometries([
   at(cloth(0.235, 0.33, 0.92, 4, 0.05, 9, 1, true), 0, 0.51, 0),
   at(cloth(0.21, 0.245, 0.5, 3, 0.03, 8, 1, true), 0, 1.2, 0),
@@ -516,7 +523,7 @@ function shotFor(i, t) {
   };
 }
 function flyTo(getEnd, dur = 2.2, arc = 0, onDone = null) {
-  fly = { p0: camera.position.clone(), t0: controls.target.clone(), getEnd, dur, arc, start: performance.now(), onDone };
+  fly = { p0: camera.position.clone(), t0: controls.target.clone(), getEnd, dur, arc, start: clock(), onDone };
   controls.enabled = false;
 }
 canvas.addEventListener('pointerdown', () => { if (!fly) follow = -1; });
@@ -727,16 +734,16 @@ qEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const li = res
 resEl.addEventListener('click', (e) => { const li = e.target.closest('li[data-i]'); if (li) pick(+li.dataset.i); });
 document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.search')) resEl.classList.remove('on'); });
 
-let pulseStart = 0;
+let pulseStart = 0, pendingLetter = null;
 function pick(i, fromLink = false) {
   resEl.classList.remove('on'); qEl.blur();
   qEl.value = handle(people[i]);
   sheet.classList.remove('on'); liftTo = 0;
   found = i; follow = -1;
   meTag.textContent = handle(people[i]);
-  ghost.visible = beam.visible = halo.visible = true; pulseStart = performance.now();
+  ghost.visible = beam.visible = halo.visible = true; pulseStart = clock();
   track('saff_found', { src: people[i][2], via: fromLink ? 'link' : 'search' });
-  flyTo(() => shotFor(i, now()), fromLink ? 3.2 : 2.6, 10, () => { follow = i; setTimeout(() => openLetter(i), 650); });
+  flyTo(() => shotFor(i, now()), fromLink ? 3.2 : 2.6, 10, () => { follow = i; pendingLetter = { at: clock() + 650, i }; });
 }
 
 /* ================= вступление ================= */
@@ -753,14 +760,15 @@ if (window.visualViewport) visualViewport.addEventListener('resize', () => { res
 let frame = 0, lastF = null;
 // Подстройка под телефон: каждые 60 кадров меряем время кадра; если тяжело — ступенями снижаем нагрузку:
 // 1) разрешение 1×, 2) 30 кадров в секунду и плашки реже. Обратно не поднимаем, чтобы не мигало.
-let perfN = 0, perfT0 = performance.now(), level = 0, lastTs = 0;
-const labelEvery = () => (level >= 2 ? 3 : isMobile ? 2 : 1);
+let perfN = 0, perfT0 = clock(), level = 0, lastTs = 0;
+const labelEvery = () => (REC ? 1 : level >= 2 ? 3 : isMobile ? 2 : 1);
 function tick(ts) {
-  requestAnimationFrame(tick);
+  if (!REC) requestAnimationFrame(tick);
   if (level >= 2 && ts - lastTs < 30) return;   // ограничение 30 к/с
   lastTs = ts;
-  if (++perfN % 60 === 0) {
-    const ms = (performance.now() - perfT0) / 60; perfT0 = performance.now();
+  if (pendingLetter && clock() >= pendingLetter.at) { const pl = pendingLetter; pendingLetter = null; openLetter(pl.i); }
+  if (!REC && ++perfN % 60 === 0) {
+    const ms = (clock() - perfT0) / 60; perfT0 = clock();
     if (perfN > 60 && ms > (level >= 2 ? 40 : 22)) {
       if (level === 0 && dpr > 1) { dpr = 1; renderer.setPixelRatio(1); renderer.setSize(innerWidth, innerHeight, false); level = 1; }
       else if (level <= 1) level = 2;
@@ -771,7 +779,7 @@ function tick(ts) {
   if (Math.abs(lift - liftTo) > 0.001) setLift(lift + (liftTo - lift) * 0.12);
   uTime.value = t;
   if (fly) {
-    const k = Math.min(1, (performance.now() - fly.start) / (fly.dur * 1000)), e = easeIO(k);
+    const k = Math.min(1, (clock() - fly.start) / (fly.dur * 1000)), e = easeIO(k);
     const end = fly.getEnd();
     camera.position.lerpVectors(fly.p0, end.pos, e);
     camera.position.y += Math.sin(Math.PI * e) * fly.arc;
@@ -795,7 +803,7 @@ function tick(ts) {
     const bob = Math.abs(Math.sin(t * 3.6 + polar[found * 4 + 1] * 17)) * 0.035;
     ghost.position.set(W1.x, bob, W1.z); ghost.rotation.y = W1.th; ghost.scale.setScalar(W1.s * 1.04);
     beam.position.set(W1.x, 15, W1.z); halo.position.set(W1.x, 0.14, W1.z);
-    const p = (performance.now() - pulseStart) / 1000, o = Math.min(1, p / 0.8);
+    const p = (clock() - pulseStart) / 1000, o = Math.min(1, p / 0.8);
     glowMat.opacity = o * (0.35 + 0.15 * Math.sin(p * 3));
     beam.material.uniforms.o.value = o;
     halo.material.opacity = o * (0.9 - (p % 1.6) / 1.6 * 0.9);
@@ -804,14 +812,61 @@ function tick(ts) {
   if (frame++ % labelEvery() === 0) updateLabels(t);
   renderer.render(scene, camera);
 }
-requestAnimationFrame(tick);
+if (!REC) requestAnimationFrame(tick);
 document.getElementById('loading').classList.add('done');
 track('saff_open', { ref: document.referrer ? new URL(document.referrer).hostname : '', link: !!new URLSearchParams(location.search).get('n') });
 
 const linkN = norm(new URLSearchParams(location.search).get('n') || '');
 const linked = linkN ? index.find(([u, n]) => u === linkN || n === linkN) : null;
-if (linked) { hideIntro(); setTimeout(() => pick(linked[2], true), 300); }
+if (REC) setupRec();
+else if (linked) { hideIntro(); setTimeout(() => pick(linked[2], true), 300); }
 else flyTo(() => OVERVIEW, 4.5, 0);
+
+/* ================= режим записи ролика ================= */
+function setupRec() {
+  document.documentElement.classList.add('rec');
+  intro.style.display = 'none'; hint.style.display = 'none';
+  const P = new URLSearchParams(location.search);
+  const target = index.find(([u]) => u === norm(P.get('rec') || 'mingzye4'));
+  const TI = target ? target[2] : 4;
+  const nick = people[TI][0];
+  // ключевые моменты (с), подогнаны под озвучку
+  const B = { down: 5.5, type: 10.7, pick: 12.6, close: 19.6, rise: 23.6 };
+  const crowd = TI + 160; // чужой человек во 2–3 кольце для кадра «в толпе»
+  let stage = 0, sheetOpenAt = -1, sheetCloseAt = -1, orbitA0 = 0;
+  const orbit = (a, r = 58, y = 44) => ({ pos: new THREE.Vector3(Math.sin(a) * r, y, Math.cos(a) * r), look: new THREE.Vector3(0, 1, 0) });
+  const origOpen = openLetter;
+  window.__frame = (dt) => {
+    recMs += dt;
+    const t = now();
+    if (t < B.down) { const e = easeIO(t / B.down); const o = orbit(0.2 + t * 0.06, 78 - e * 26, 58 - e * 16); camera.position.copy(o.pos); controls.target.copy(o.look); camera.lookAt(o.look); }
+    if (stage === 0 && t >= B.down) { stage = 1; flyTo(() => shotFor(crowd, now()), 4.4, 6); }
+    if (stage === 1 && t >= B.type) { stage = 2; qEl.classList.add('recfocus'); }
+    if (stage === 2) {
+      const n = Math.min(nick.length, Math.floor((t - B.type - 0.2) / 0.16) + 1);
+      if (n > 0 && qEl.value !== nick.slice(0, n)) { qEl.value = nick.slice(0, n); renderResults(qEl.value); }
+      if (t >= B.pick) { stage = 3; qEl.classList.remove('recfocus'); pick(TI); }
+    }
+    if (stage === 3 && sheet.classList.contains('on') && sheetOpenAt < 0) sheetOpenAt = t;
+    if (sheetOpenAt >= 0 && sheetCloseAt < 0) {
+      const k = easeIO(Math.min(1, (t - sheetOpenAt) / 0.6));
+      sheet.style.transform = `translateY(${(1 - k) * 105}%)`;
+      const sc = Math.max(0, (t - sheetOpenAt - 1.6) / 2.4);
+      sheet.scrollTop = easeIO(Math.min(1, sc)) * 210;
+    }
+    if (stage === 3 && t >= B.close) { stage = 4; sheetCloseAt = t; follow = -1; }
+    if (sheetCloseAt >= 0) {
+      const k = easeIO(Math.min(1, (t - sheetCloseAt) / 0.6));
+      sheet.style.transform = `translateY(${k * 105}%)`;
+      if (k >= 1 && sheet.classList.contains('on')) { sheet.classList.remove('on'); liftTo = 0; }
+    }
+    if (stage === 4 && t >= B.close + 0.3) { stage = 5; orbitA0 = Math.atan2(camera.position.x, camera.position.z); flyTo(() => orbit(orbitA0 + 0.25, 46, 30), 3.6, 0); }
+    if (stage === 5 && t >= B.rise + 0.1 && !fly) { const o = orbit(orbitA0 + 0.25 + (t - B.rise - 0.1) * 0.05, 46, 30); camera.position.copy(o.pos); controls.target.copy(o.look); camera.lookAt(o.look); }
+    tick(recMs);
+    return t;
+  };
+  window.__ready = true;
+}
 </script>
 </body>
 </html>
