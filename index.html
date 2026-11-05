@@ -279,8 +279,9 @@ function where(i, t, out) {
 const canvas = document.getElementById('scene');
 const isMobile = matchMedia('(pointer: coarse)').matches || innerWidth < 760;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: devicePixelRatio < 2, powerPreference: 'high-performance' });
-let dpr = Math.min(devicePixelRatio, isMobile ? 1.5 : 2);
+let dpr = Math.min(devicePixelRatio, isMobile ? 1.25 : 2);
 renderer.setPixelRatio(dpr);
+window.__saff = { renderer, get level() { return level; } };
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -380,8 +381,8 @@ for (let k = 0; k < 26; k++) {
 }
 
 /* ================= люди: инстансы, движение в шейдере ================= */
-function cloth(rTop, rBot, h, folds = 9, amp = 0.04, seg = 18) {
-  const g = new THREE.CylinderGeometry(rTop, rBot, h, seg, 3, false);
+function cloth(rTop, rBot, h, folds = 9, amp = 0.04, seg = 18, hs = 3, open = false) {
+  const g = new THREE.CylinderGeometry(rTop, rBot, h, seg, hs, open);
   const p = g.attributes.position;
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i), y = p.getY(i), z = p.getZ(i), r = Math.hypot(x, z);
@@ -395,6 +396,15 @@ function cloth(rTop, rBot, h, folds = 9, amp = 0.04, seg = 18) {
 const at = (g, x, y, z, rx = 0, rz = 0, s = null) => { if (s) g.scale(...s); if (rx) g.rotateX(rx); if (rz) g.rotateZ(rz); g.translate(x, y, z); return g; };
 const strip = (g) => { g.deleteAttribute('uv'); return g.index ? g.toNonIndexed() : g; };
 // белые одежды ихрама, голова покрыта тканью; лиц нет. Человек смотрит в -z.
+// Телефон: толпа из ~1 900 человек — главная нагрузка. Там одна низкополигональная модель (~110 треугольников вместо ~1 050),
+// без кистей и теней и на дешёвом освещении Lambert. Найденный человек всегда в полной детализации.
+const LOW = isMobile;
+const robeLow = mergeGeometries([
+  at(cloth(0.235, 0.33, 0.92, 4, 0.05, 9, 1, true), 0, 0.51, 0),
+  at(cloth(0.21, 0.245, 0.5, 3, 0.03, 8, 1, true), 0, 1.2, 0),
+  at(new THREE.CylinderGeometry(0.12, 0.27, 0.24, 8, 1, true), 0, 1.5, 0.02, 0, 0, [1, 1, 0.8]),   // плечи и ткань одним конусом
+  at(new THREE.SphereGeometry(0.16, 7, 4), 0, 1.72, 0.02, 0, 0, [1, 1.05, 1.05]),
+].map(strip));
 const robeGeo = mergeGeometries([
   at(cloth(0.235, 0.33, 0.92), 0, 0.51, 0),
   at(cloth(0.21, 0.245, 0.5, 7, 0.03, 14), 0, 1.2, 0),
@@ -431,14 +441,17 @@ function tawaf(mat) {
   };
   return mat;
 }
+const Mat = LOW ? THREE.MeshLambertMaterial : THREE.MeshStandardMaterial;
 const mats = {
-  robe: tawaf(new THREE.MeshStandardMaterial({ roughness: 0.82 })),
-  skin: tawaf(new THREE.MeshStandardMaterial({ roughness: 0.7 })),
+  robe: tawaf(new Mat(LOW ? {} : { roughness: 0.82 })),
+  skin: tawaf(new Mat(LOW ? {} : { roughness: 0.7 })),
   shadow: tawaf(new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.16, depthWrite: false })),
 };
 const inst = {};
 const col = new THREE.Color();
-for (const [k, geo] of [['robe', robeGeo], ['skin', skinGeo], ['shadow', shadowGeo]]) {
+const crowdRobe = LOW ? robeLow : robeGeo;
+for (const [k, geo] of [['robe', crowdRobe], ['skin', skinGeo], ['shadow', shadowGeo]]) {
+  if (LOW && k !== 'robe') continue;
   geo.setAttribute('aPolar', polarAttr);
   const m = new THREE.InstancedMesh(geo, mats[k], N);
   m.frustumCulled = false;
@@ -446,9 +459,10 @@ for (const [k, geo] of [['robe', robeGeo], ['skin', skinGeo], ['shadow', shadowG
 }
 for (let i = 0; i < N; i++) {
   inst.robe.setColorAt(i, col.set(IHRAM[Math.floor(rnd(i, 1) * IHRAM.length)]));
-  inst.skin.setColorAt(i, col.set(SKINS[Math.floor(rnd(i, 2) * SKINS.length)]));
+  if (inst.skin) inst.skin.setColorAt(i, col.set(SKINS[Math.floor(rnd(i, 2) * SKINS.length)]));
 }
-inst.robe.instanceColor.needsUpdate = inst.skin.instanceColor.needsUpdate = true;
+inst.robe.instanceColor.needsUpdate = true;
+if (inst.skin) inst.skin.instanceColor.needsUpdate = true;
 
 // найденный: золотой силуэт, луч, кольцо на полу (двигаются вместе с ним)
 const glowMat = new THREE.MeshStandardMaterial({ color: '#F3D48A', emissive: '#E9C46A', emissiveIntensity: 1.2, transparent: true, opacity: 0, depthWrite: false });
@@ -725,12 +739,23 @@ addEventListener('resize', () => { applyAspect(); renderer.setSize(innerWidth, i
 // список подсказок не уходит под клавиатуру
 if (window.visualViewport) visualViewport.addEventListener('resize', () => { resEl.style.maxHeight = Math.max(160, visualViewport.height - 130) + 'px'; });
 let frame = 0, lastF = null;
-let perfN = 0, perfT0 = 0;
-function tick() {
+// Подстройка под телефон: каждые 60 кадров меряем время кадра; если тяжело — ступенями снижаем нагрузку:
+// 1) разрешение 1×, 2) 30 кадров в секунду и плашки реже. Обратно не поднимаем, чтобы не мигало.
+let perfN = 0, perfT0 = performance.now(), level = 0, lastTs = 0;
+const labelEvery = () => (level >= 2 ? 3 : isMobile ? 2 : 1);
+function tick(ts) {
+  requestAnimationFrame(tick);
+  if (level >= 2 && ts - lastTs < 30) return;   // ограничение 30 к/с
+  lastTs = ts;
+  if (++perfN % 60 === 0) {
+    const ms = (performance.now() - perfT0) / 60; perfT0 = performance.now();
+    if (perfN > 60 && ms > (level >= 2 ? 40 : 22)) {
+      if (level === 0 && dpr > 1) { dpr = 1; renderer.setPixelRatio(1); renderer.setSize(innerWidth, innerHeight, false); level = 1; }
+      else if (level <= 1) level = 2;
+    }
+  }
   const t = now();
   // слабый телефон: после 90 кадров меряем скорость и снижаем разрешение
-  if (perfN === 10) perfT0 = performance.now();
-  if (++perfN === 100 && dpr > 1 && (performance.now() - perfT0) / 90 > 26) { dpr = 1; renderer.setPixelRatio(1); renderer.setSize(innerWidth, innerHeight, false); }
   if (Math.abs(lift - liftTo) > 0.001) setLift(lift + (liftTo - lift) * 0.12);
   uTime.value = t;
   if (fly) {
@@ -764,9 +789,8 @@ function tick() {
     halo.material.opacity = o * (0.9 - (p % 1.6) / 1.6 * 0.9);
     halo.scale.setScalar(1 + (p % 1.6) * 0.9);
   }
-  if ((frame++ & 1) === 0 || fly || follow >= 0) updateLabels(t);
+  if (frame++ % labelEvery() === 0) updateLabels(t);
   renderer.render(scene, camera);
-  requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
 document.getElementById('loading').classList.add('done');
