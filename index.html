@@ -222,7 +222,7 @@ const R0 = 9.6, DR = 0.86, STEP = 0.78;   // радиус первого кол�
 const WALK = 0.5;                           // скорость шага, единиц в секунду (одна на всех: никто не проходит сквозь соседа)
 const PLAY = 'https://play.google.com/store/apps/details?id=com.way.quran_widget&referrer=utm_source%3Dtiktok%26utm_medium%3Dsaff';
 const APPSTORE = 'https://apps.apple.com/app/id6764872734?ct=saff';
-const AMP_KEY = ''; // отключено 05.11: веб-события портили «новых пользователей» в проекте приложения
+const AMP_KEY = '4b8a13fea0f3d4b8b1ebd118eaddaa4c';
 const IHRAM = ['#FBFAF6', '#F6F4EE', '#FFFFFF', '#F1EEE6', '#FAF8F2', '#ECE8DE'];
 const SKINS = ['#9C6E50', '#B5835F', '#8A5E43', '#C29270', '#7A5139'];
 
@@ -233,15 +233,18 @@ document.documentElement.dataset.platform = platform;
 const webview = /musical_ly|BytedanceWebview|Bytedance|Instagram|FBAN|FBAV/i.test(ua) || (/iPhone|iPad|iPod/.test(ua) && !/Safari\//.test(ua));
 if (webview) document.documentElement.dataset.webview = '1';
 
-/* ================= аналитика (Amplitude, платформа Web) ================= */
-let deviceId = 'web-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-try { const s = localStorage.getItem('saff_did'); if (s) deviceId = s; else localStorage.setItem('saff_did', deviceId); } catch (e) {}
+/* ================= аналитика: только клики по кнопкам =================
+   Все события идут от одного общего device_id, чтобы сайт не создавал «новых пользователей»
+   в проекте приложения (он один на всех; людей считаем по vid в свойствах). */
+let vid = Math.random().toString(36).slice(2, 10);
+try { const v = localStorage.getItem('saff_vid'); if (v) vid = v; else localStorage.setItem('saff_vid', vid); } catch (e) {}
+const CLICKS = new Set(['saff_open', 'saff_store_tap', 'saff_share', 'saff_donate_open', 'saff_donate_tap']);
 function track(event_type, props = {}) {
-  if (!AMP_KEY || REC || /^(127\.0\.0\.1|localhost)$/.test(location.hostname)) return;
+  if (!CLICKS.has(event_type) || !AMP_KEY || REC || /^(127\.0\.0\.1|localhost)$/.test(location.hostname)) return;
   try {
     fetch('https://api2.amplitude.com/2/httpapi', {
       method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ api_key: AMP_KEY, events: [{ device_id: deviceId, event_type, platform: 'Web', os_name: platform, ip: '$remote', language: navigator.language, event_properties: { ...props, webview } }] }),
+      body: JSON.stringify({ api_key: AMP_KEY, events: [{ device_id: 'saff-site', user_id: 'saff-site', event_type, platform: 'Web', ip: '$remote', event_properties: { ...props, vid, os: platform, webview, lang: navigator.language } }] }),
     }).catch(() => {});
   } catch (e) {}
 }
