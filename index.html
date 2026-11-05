@@ -667,7 +667,7 @@ const dn = document.getElementById('dn');
 function openDonate() {
   const L = [];
   if (DONATE.card) L.push(`<div class="dn-step">Kaspi.kz → «Переводы» → «Клиенту Kaspi» → вставь номер карты. Из другого банка Казахстана — перевод по номеру карты.</div>
-    <div class="dn-card-row"><span class="dn-num">${esc(DONATE.card)}</span><button class="store dn-kaspi dn-copy" id="dnCopy" data-dn="card">Скопировать номер</button></div>`);
+    <div class="dn-card-row"><span class="dn-num">${esc(String(DONATE.card).replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 '))}</span><button class="store dn-kaspi dn-copy" id="dnCopy" data-dn="card">Скопировать номер</button></div>`);
   if (DONATE.kaspi) L.push(`<a class="store dn-kaspi" href="${esc(DONATE.kaspi)}" target="_blank" rel="noopener" data-dn="kaspi">Kaspi · Казахстан</a>`);
   if (DONATE.other) L.push(`<a class="store" href="${esc(DONATE.other)}" target="_blank" rel="noopener" data-dn="other">Другие страны · картой</a>`);
   document.getElementById('dnLinks').innerHTML = L.join('');
