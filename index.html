@@ -116,7 +116,7 @@
   .stores { display: grid; gap: 8px; }
   .store { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; border-radius: 14px; background: #14110B; color: #fff; text-decoration: none; font: 600 15px var(--sans); }
   .store svg { width: 20px; height: 20px; }
-  html[data-platform="ios"] .store--android, html[data-platform="android"] .store--ios { display: none; }
+  html[data-platform="ios"] .store--ios { order: -1; } /* обе кнопки всегда, своя платформа первой */
   .gate { display: none; margin-top: 10px; padding: 12px 14px; border-radius: 12px; background: #FFF4D6; border: 1px solid #EBCF85; font: 400 13.5px/1.45 var(--sans); color: #5A4512; }
   html[data-webview][data-platform="ios"] .gate { display: block; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
