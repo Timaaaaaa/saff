@@ -177,7 +177,7 @@
   <div class="count" id="count">Вокруг Каабы</div>
   <div class="search">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-    <input id="q" type="search" placeholder="Твой ник в TikTok" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+    <input id="q" type="search" placeholder="Твой ник в TikTok или Instagram" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
     <ul class="results" id="results"></ul>
   </div>
 </div>
@@ -725,7 +725,7 @@ function renderResults(q) {
   if (!norm(q)) { resEl.classList.remove('on'); return; }
   resEl.innerHTML = list.length
     ? list.map((i, k) => `<li data-i="${i}" class="${k === 0 ? 'sel' : ''}"><span class="u">${esc(handle(people[i]))}</span>${people[i][1] && people[i][0] ? `<span class="n">${esc(people[i][1])}</span>` : ''}</li>`).join('')
-    : `<li class="none">Пока не нашли тебя. Напиши «Иду» под последним роликом @quran.widget.app — добавим в следующий раз.</li>`;
+    : `<li class="none">Пока не нашли тебя. Напиши «Иду» под последним роликом в TikTok @quran.widget.app или в Instagram @indiedev2000 — добавим в следующий раз.</li>`;
   resEl.classList.add('on');
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => { if (norm(q) !== lastQ) { lastQ = norm(q); track('saff_search', { len: lastQ.length, found: list.length > 0 }); } }, 900);
