@@ -125,6 +125,30 @@
   .loading { position: fixed; inset: 0; display: grid; place-items: center; z-index: 60; background: var(--night); color: var(--muted); font: 500 15px var(--sans); transition: opacity .6s; }
   .loading.done { opacity: 0; pointer-events: none; }
   @media (min-width: 760px) { .sheet { padding-bottom: 24px; } }
+  .grab { display: none; }
+  @media (max-width: 560px) {
+    .top { padding: max(10px, env(safe-area-inset-top)) 12px 0; }
+    .count { font-size: 11px; margin-bottom: 6px; }
+    .search input { height: 46px; font-size: 16px; border-radius: 12px; }
+    .search svg { top: 13px; }
+    .tag { font-size: 11px; padding: 2px 7px; }
+    .tag.me { font-size: 14px; padding: 5px 10px; }
+    .intro { left: 12px; right: 12px; padding: 18px 18px 14px; border-radius: 18px; }
+    .intro h1 { font-size: 22px; margin-bottom: 8px; }
+    .intro p { font-size: 14px; margin-bottom: 14px; }
+    .btn { height: 48px; }
+    .sheet { max-height: 62vh; max-height: 62dvh; padding: 0; -webkit-overflow-scrolling: touch; }
+    .letter { border-radius: 20px 20px 0 0; padding: 14px 18px max(18px, env(safe-area-inset-bottom)); border-bottom: 0; }
+    .letter::before { inset: 6px 6px 0; border-bottom: 0; border-radius: 14px 14px 0 0; }
+    .grab { display: block; width: 40px; height: 4px; border-radius: 2px; background: rgba(42,34,22,.2); margin: 0 auto 12px; }
+    .close { top: 10px; right: 10px; width: 32px; height: 32px; font-size: 18px; }
+    .meta { margin-bottom: 10px; }
+    .letter h2 { font-size: 22px; padding-right: 30px; }
+    .place { font-size: 14px; margin-bottom: 12px; }
+    .letter p.body, .wishes li { font-size: 16px; }
+    .wishes li { padding: 6px 0 6px 24px; }
+    .amin { font-size: 18px; }
+  }
 </style>
 </head>
 <body>
@@ -234,8 +258,10 @@ function where(i, t, out) {
 
 /* ================= сцена ================= */
 const canvas = document.getElementById('scene');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const isMobile = matchMedia('(pointer: coarse)').matches || innerWidth < 760;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: devicePixelRatio < 2, powerPreference: 'high-performance' });
+let dpr = Math.min(devicePixelRatio, isMobile ? 1.5 : 2);
+renderer.setPixelRatio(dpr);
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -244,6 +270,9 @@ renderer.toneMappingExposure = 1.05;
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog('#E9A877', 90, 380);
 const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.5, 900);
+const portrait = () => innerWidth / innerHeight < 0.8;
+function applyAspect() { camera.aspect = innerWidth / innerHeight; camera.fov = portrait() ? 62 : 48; camera.updateProjectionMatrix(); }
+applyAspect();
 
 const SUN_DIR = new THREE.Vector3(-0.35, 0.08, -1).normalize();
 const sky = new THREE.Mesh(new THREE.SphereGeometry(600, 32, 16), new THREE.ShaderMaterial({
@@ -428,7 +457,9 @@ controls.addEventListener('change', () => {
   if (r > lim) { const k = lim / r, dx = t.x * k - t.x, dz = t.z * k - t.z; t.x += dx; t.z += dz; camera.position.x += dx; camera.position.z += dz; }
   t.y = THREE.MathUtils.clamp(t.y, 0, 4);
 });
-const OVERVIEW = { pos: new THREE.Vector3(-26, 38, 52), look: new THREE.Vector3(0, 2, 0) };
+const OVERVIEW = portrait()
+  ? { pos: new THREE.Vector3(-16, 74, 66), look: new THREE.Vector3(0, 0, 4) }
+  : { pos: new THREE.Vector3(-26, 38, 52), look: new THREE.Vector3(0, 2, 0) };
 camera.position.set(0, 140, 220);
 controls.target.set(0, 2, 0);
 controls.update();
@@ -441,9 +472,10 @@ function shotFor(i, t) {
   where(i, t, W1);
   const nx = Math.cos(W1.th), nz = -Math.sin(W1.th);      // наружу от Каабы
   const bx = Math.sin(W1.th), bz = Math.cos(W1.th);       // назад по ходу движения
+  const P = portrait(), out = P ? 4.4 : 3.4, back = P ? 3.0 : 2.2, k = P ? 0.92 : 0.8;
   return {
-    pos: new THREE.Vector3(W1.x + nx * 3.4 + bx * 2.2, 2.6, W1.z + nz * 3.4 + bz * 2.2),
-    look: new THREE.Vector3(W1.x * 0.8, 1.6, W1.z * 0.8),
+    pos: new THREE.Vector3(W1.x + nx * out + bx * back, P ? 3.2 : 2.6, W1.z + nz * out + bz * back),
+    look: new THREE.Vector3(W1.x * k, 1.5, W1.z * k),
   };
 }
 function flyTo(getEnd, dur = 2.2, arc = 0, onDone = null) {
@@ -454,7 +486,7 @@ canvas.addEventListener('pointerdown', () => { if (!fly) follow = -1; });
 
 /* ================= плашки ================= */
 const labelsEl = document.getElementById('labels');
-const POOL = 48;
+const POOL = innerWidth < 560 ? 18 : 48;
 const tags = Array.from({ length: POOL }, () => { const d = document.createElement('div'); d.className = 'tag'; labelsEl.appendChild(d); return d; });
 const meTag = document.createElement('div'); meTag.className = 'tag me'; labelsEl.appendChild(meTag);
 const handle = (p) => p[0] ? '@' + p[0] : p[1];
@@ -467,7 +499,7 @@ function updateLabels(t) {
   let used = 0;
   if (dist < 36) {
     const cx = camera.position.x, cz = camera.position.z;
-    const maxD2 = (dist < 14 ? 15 : 26) ** 2;
+    const maxD2 = innerWidth < 560 ? (dist < 14 ? 9 : 18) ** 2 : (dist < 14 ? 15 : 26) ** 2;
     let m = 0;
     for (let i = 0; i < N; i++) {
       where(i, t, W2); PX[i] = W2.x; PZ[i] = W2.z;
@@ -543,6 +575,7 @@ function letterHTML(i) {
   let x = h;
   while (picks.length < 4) { x = Math.imul(x ^ (x >>> 15), 2246822507) >>> 0; const k = pool[x % pool.length]; if (!picks.includes(k)) picks.push(k); }
   return `
+    <div class="grab"></div>
     <button class="close" id="closeLetter" aria-label="Закрыть">×</button>
     <div class="meta">Письмо № ${fmt(i + 1)} из ${fmt(N)}</div>
     <h2>Ассаляму алейкум, ${esc(name)}!</h2>
@@ -572,7 +605,15 @@ function letterHTML(i) {
     <p class="fine">Не хочешь быть здесь? Напиши нам в TikTok @quran.widget.app, уберём.</p>`;
 }
 const sheet = document.getElementById('sheet'), letter = document.getElementById('letter');
+// на телефоне письмо занимает низ экрана: сдвигаем кадр, чтобы человек был виден сверху
+let lift = 0, liftTo = 0;
+function setLift(v) {
+  lift = v;
+  if (v < 0.001) camera.clearViewOffset();
+  else camera.setViewOffset(innerWidth, innerHeight, 0, innerHeight * 0.16 * v, innerWidth, innerHeight);
+}
 function openLetter(i) {
+  if (innerWidth < 560) liftTo = 1;
   letter.innerHTML = letterHTML(i);
   sheet.scrollTop = 0;
   sheet.classList.add('on');
@@ -582,7 +623,7 @@ function openLetter(i) {
   document.getElementById('shareBtn').onclick = () => share(i);
   letter.querySelectorAll('[data-store]').forEach(a => a.addEventListener('click', () => track('saff_store_tap', { store: a.dataset.store })));
 }
-function closeLetter() { sheet.classList.remove('on'); controls.enabled = true; }
+function closeLetter() { sheet.classList.remove('on'); controls.enabled = true; liftTo = 0; }
 const toastEl = document.getElementById('toast');
 function toast(t) { toastEl.textContent = t; toastEl.classList.add('on'); setTimeout(() => toastEl.classList.remove('on'), 2200); }
 async function share(i) {
@@ -630,7 +671,7 @@ let pulseStart = 0;
 function pick(i, fromLink = false) {
   resEl.classList.remove('on'); qEl.blur();
   qEl.value = handle(people[i]);
-  sheet.classList.remove('on');
+  sheet.classList.remove('on'); liftTo = 0;
   found = i; follow = -1;
   meTag.textContent = handle(people[i]);
   ghost.visible = beam.visible = halo.visible = true; pulseStart = performance.now();
@@ -646,10 +687,17 @@ document.getElementById('findBtn').onclick = () => { hideIntro(); qEl.focus(); }
 canvas.addEventListener('pointerdown', () => { if (!fly) hideIntro(); });
 
 /* ================= цикл ================= */
-addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight, false); });
+addEventListener('resize', () => { applyAspect(); renderer.setSize(innerWidth, innerHeight, false); setLift(lift); });
+// список подсказок не уходит под клавиатуру
+if (window.visualViewport) visualViewport.addEventListener('resize', () => { resEl.style.maxHeight = Math.max(160, visualViewport.height - 130) + 'px'; });
 let frame = 0, lastF = null;
+let perfN = 0, perfT0 = 0;
 function tick() {
   const t = now();
+  // слабый телефон: после 90 кадров меряем скорость и снижаем разрешение
+  if (perfN === 10) perfT0 = performance.now();
+  if (++perfN === 100 && dpr > 1 && (performance.now() - perfT0) / 90 > 26) { dpr = 1; renderer.setPixelRatio(1); renderer.setSize(innerWidth, innerHeight, false); }
+  if (Math.abs(lift - liftTo) > 0.001) setLift(lift + (liftTo - lift) * 0.12);
   uTime.value = t;
   if (fly) {
     const k = Math.min(1, (performance.now() - fly.start) / (fly.dur * 1000)), e = easeIO(k);
