@@ -241,7 +241,7 @@ function track(event_type, props = {}) {
   try {
     fetch('https://api2.amplitude.com/2/httpapi', {
       method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ api_key: AMP_KEY, events: [{ device_id: deviceId, event_type, platform: 'Web', os_name: platform, event_properties: { ...props, webview } }] }),
+      body: JSON.stringify({ api_key: AMP_KEY, events: [{ device_id: deviceId, event_type, platform: 'Web', os_name: platform, ip: '$remote', language: navigator.language, event_properties: { ...props, webview } }] }),
     }).catch(() => {});
   } catch (e) {}
 }
