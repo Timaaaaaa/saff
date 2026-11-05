@@ -134,6 +134,10 @@
   .dn-card p { font: 400 14.5px/1.5 var(--sans); color: var(--paper-muted); margin: 0 0 14px; }
   .dn-card .store { margin-top: 8px; }
   .dn-kaspi { background: #F14635 !important; }
+  .dn-step { font: 400 13.5px/1.45 var(--sans); color: var(--paper-muted); margin: 0 0 10px; }
+  .dn-card-row { display: grid; gap: 8px; }
+  .dn-num { display: block; text-align: center; font: 700 19px/1 var(--sans); letter-spacing: .04em; white-space: nowrap; padding: 14px 8px; border-radius: 12px; background: #fff; border: 1px dashed #D9C08A; user-select: all; -webkit-user-select: all; }
+  .dn-copy { border: 0; width: 100%; cursor: pointer; }
   @media (min-width: 561px) { .dn { align-items: center; } }
   @media (max-width: 560px) {
     .top { padding: max(10px, env(safe-area-inset-top)) 12px 0; }
@@ -241,7 +245,7 @@ function track(event_type, props = {}) {
 const people = await fetch('people.json').then(r => r.json()); // [uniqueId, nickname, src]
 const N = people.length;
 const DONATE = await fetch('donate.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({}));
-const hasDonate = !!(DONATE.kaspi || DONATE.other);
+const hasDonate = !!(DONATE.kaspi || DONATE.other || DONATE.card);
 const fmt = (n) => n.toLocaleString('ru-RU');
 document.getElementById('count').textContent = `Вокруг Каабы · ${fmt(N)} человек`;
 document.getElementById('introN').textContent = `${fmt(N)} человек`;
@@ -662,10 +666,18 @@ function openLetter(i) {
 const dn = document.getElementById('dn');
 function openDonate() {
   const L = [];
+  if (DONATE.card) L.push(`<div class="dn-step">Kaspi.kz → «Переводы» → «Клиенту Kaspi» → вставь номер карты. Из другого банка Казахстана — перевод по номеру карты.</div>
+    <div class="dn-card-row"><span class="dn-num">${esc(DONATE.card)}</span><button class="store dn-kaspi dn-copy" id="dnCopy" data-dn="card">Скопировать номер</button></div>`);
   if (DONATE.kaspi) L.push(`<a class="store dn-kaspi" href="${esc(DONATE.kaspi)}" target="_blank" rel="noopener" data-dn="kaspi">Kaspi · Казахстан</a>`);
   if (DONATE.other) L.push(`<a class="store" href="${esc(DONATE.other)}" target="_blank" rel="noopener" data-dn="other">Другие страны · картой</a>`);
   document.getElementById('dnLinks').innerHTML = L.join('');
   document.querySelectorAll('[data-dn]').forEach(a => a.addEventListener('click', () => track('saff_donate_tap', { via: a.dataset.dn })));
+  const cp = document.getElementById('dnCopy');
+  if (cp) cp.onclick = async () => {
+    const raw = String(DONATE.card).replace(/\s+/g, '');
+    try { await navigator.clipboard.writeText(raw); cp.textContent = 'Скопировано'; }
+    catch (e) { const r = document.createRange(); r.selectNodeContents(document.querySelector('.dn-num')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); cp.textContent = 'Выделено — скопируй'; }
+  };
   dn.classList.add('on');
   track('saff_donate_open', {});
 }
