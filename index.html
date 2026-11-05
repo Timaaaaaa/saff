@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>Наш саф</title>
-<meta name="description" content="Все, кто встал с нами в ряд на пути к Каабе. Найди себя и забери своё письмо.">
-<meta property="og:title" content="Наш саф — найди себя">
+<title>Вокруг Каабы</title>
+<meta name="description" content="Все, кто идёт с нами вокруг Каабы. Найди себя и забери своё письмо.">
+<meta property="og:title" content="Вокруг Каабы — найди себя">
 <meta property="og:description" content="Мы не смогли уместить всех в одно видео. Здесь стоят все.">
 <meta name="theme-color" content="#1B1530">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -132,7 +132,7 @@
 <div id="labels"></div>
 
 <div class="top">
-  <div class="count" id="count">Наш саф</div>
+  <div class="count" id="count">Вокруг Каабы</div>
   <div class="search">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
     <input id="q" type="search" placeholder="Твой ник в TikTok" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
@@ -142,16 +142,16 @@
 
 <div class="intro" id="intro">
   <h1>Мы не смогли уместить всех в одно видео</h1>
-  <p>Поэтому построили этот саф. Здесь стоят все, кто написал «Амин» и подписался: <b id="introN">…</b>. Найди себя: рядом тебя ждёт письмо.</p>
+  <p>Поэтому построили двор вокруг Каабы. Здесь все, кто написал «Амин» и подписался, — <b id="introN">…</b> — вместе совершают таваф. Найди себя: тебя ждёт письмо.</p>
   <button class="btn" id="findBtn">Найти себя</button>
 </div>
-<div class="hint" id="hint">Двигай пальцем, чтобы пройти вдоль рядов</div>
+<div class="hint" id="hint">Двигай пальцем, чтобы пройти по двору</div>
 
 <div class="sheet" id="sheet">
   <article class="letter" id="letter"></article>
 </div>
 <div class="toast" id="toast"></div>
-<div class="loading" id="loading">Собираем саф…</div>
+<div class="loading" id="loading">Собираемся вокруг Каабы…</div>
 
 <script type="importmap">
 { "imports": {
@@ -165,14 +165,15 @@ import { MapControls } from 'three/addons/controls/MapControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 /* ================= настройки ================= */
-const ROW = 41, SX = 0.95, SZ = 2.3;               // мест в ряду, шаг по ряду и между рядами
-const KAABA_Z = -46;
+// Двор Масджид аль-Харам: люди идут кольцами вокруг Каабы против часовой стрелки, Кааба по левую руку.
+// Кааба стоит в начале координат. Грань +z — северо-восточная (с дверью), грань +x — северо-западная (Хиджр Исмаил),
+// угол (-x, +z) — восточный, там Чёрный камень, отсюда начинается таваф.
+const R0 = 9.6, DR = 0.86, STEP = 0.78;   // радиус первого кольца, шаг между кольцами, шаг между людьми
+const WALK = 0.5;                           // скорость шага, единиц в секунду (одна на всех: никто не проходит сквозь соседа)
 const PLAY = 'https://play.google.com/store/apps/details?id=com.way.quran_widget&referrer=utm_source%3Dtiktok%26utm_medium%3Dsaff';
 const APPSTORE = 'https://apps.apple.com/app/id6764872734?ct=saff';
 const AMP_KEY = '4b8a13fea0f3d4b8b1ebd118eaddaa4c';
-const ROBES = ['#EFE8DA', '#F4F0E6', '#E6DCC8', '#DCD3C0', '#F7F4EC', '#CFC6B2', '#E9E1CF', '#B9C7B3', '#C9B79A', '#8FA3A8'];
-const CAPS  = ['#FFFFFF', '#FFFFFF', '#F2EEE4', '#FFFFFF', '#2B2B2B', '#1F5A45', '#FFFFFF'];
-const RUGS  = ['#1F5A66', '#6A3A78', '#2F6A3E', '#7A5222', '#3A3E7A', '#7A2E2E', '#2E6A6A', '#6A5A2A'];
+const IHRAM = ['#FBFAF6', '#F6F4EE', '#FFFFFF', '#F1EEE6', '#FAF8F2', '#ECE8DE'];
 const SKINS = ['#9C6E50', '#B5835F', '#8A5E43', '#C29270', '#7A5139'];
 
 /* ================= платформа ================= */
@@ -195,21 +196,41 @@ function track(event_type, props = {}) {
   } catch (e) {}
 }
 
-/* ================= данные ================= */
+/* ================= данные и кольца ================= */
 const people = await fetch('people.json').then(r => r.json()); // [uniqueId, nickname, src]
 const N = people.length;
-const rowsTotal = Math.ceil(N / ROW);
 const fmt = (n) => n.toLocaleString('ru-RU');
-document.getElementById('count').textContent = `Наш саф · ${fmt(N)} человек`;
+document.getElementById('count').textContent = `Вокруг Каабы · ${fmt(N)} человек`;
 document.getElementById('introN').textContent = `${fmt(N)} человек`;
-
-function placeOf(i) {
-  const row = Math.floor(i / ROW), col = i % ROW;
-  const inRow = row === rowsTotal - 1 ? N - row * ROW : ROW;
-  return { row, col, x: (col - (inRow - 1) / 2) * SX, z: row * SZ };
-}
 function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 function rnd(i, s) { const x = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return x - Math.floor(x); }
+
+// раскладка: ранние участники ближе к Каабе
+const ring = new Int16Array(N), seat = new Int16Array(N);
+const polar = new Float32Array(N * 4); // r, угол старта, угловая скорость, масштаб
+{
+  let k = 0, i = 0;
+  while (i < N) {
+    const r = R0 + k * DR, n = Math.floor(2 * Math.PI * r / STEP), off = rnd(k, 5) * Math.PI * 2;
+    for (let j = 0; j < n && i < N; j++, i++) {
+      ring[i] = k; seat[i] = j;
+      polar[i * 4] = r + (rnd(i, 6) - 0.5) * 0.22;
+      polar[i * 4 + 1] = off + (j + (rnd(i, 7) - 0.5) * 0.35) * (2 * Math.PI / n);
+      polar[i * 4 + 2] = WALK / r;
+      polar[i * 4 + 3] = 0.94 + rnd(i, 8) * 0.12;
+    }
+    k++;
+  }
+}
+const RINGS = ring[N - 1] + 1, R_MAX = R0 + (RINGS - 1) * DR;
+const T0 = performance.now();
+const now = () => (performance.now() - T0) / 1000;
+// где человек сейчас: x, z и угол (против часовой, вид сверху)
+function where(i, t, out) {
+  const th = polar[i * 4 + 1] + polar[i * 4 + 2] * t, r = polar[i * 4];
+  out.x = r * Math.cos(th); out.z = -r * Math.sin(th); out.th = th; out.s = polar[i * 4 + 3];
+  return out;
+}
 
 /* ================= сцена ================= */
 const canvas = document.getElementById('scene');
@@ -221,11 +242,10 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog('#E9A877', 70, 340);
+scene.fog = new THREE.Fog('#E9A877', 90, 380);
 const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.5, 900);
 
-// небо: градиент заката, солнце низко над Каабой (Мекка к западу от нас, там закат)
-const SUN_DIR = new THREE.Vector3(-0.25, 0.07, -1).normalize();
+const SUN_DIR = new THREE.Vector3(-0.35, 0.08, -1).normalize();
 const sky = new THREE.Mesh(new THREE.SphereGeometry(600, 32, 16), new THREE.ShaderMaterial({
   side: THREE.BackSide, depthWrite: false, fog: false,
   uniforms: { sun: { value: SUN_DIR } },
@@ -242,64 +262,76 @@ const sky = new THREE.Mesh(new THREE.SphereGeometry(600, 32, 16), new THREE.Shad
     }`,
 }));
 scene.add(sky);
-
-scene.add(new THREE.HemisphereLight('#FFD9B0', '#8A6A4A', 1.15));
-const sunLight = new THREE.DirectionalLight('#FFC58A', 2.1);
-sunLight.position.copy(SUN_DIR).multiplyScalar(100).add(new THREE.Vector3(30, 40, 0));
+scene.add(new THREE.HemisphereLight('#FFE2C0', '#9A7A5A', 1.2));
+const sunLight = new THREE.DirectionalLight('#FFC58A', 2.0);
+sunLight.position.copy(SUN_DIR).multiplyScalar(100).add(new THREE.Vector3(30, 50, 0));
 scene.add(sunLight);
 const fill = new THREE.DirectionalLight('#B8C4FF', 0.55);
-fill.position.set(20, 30, 80);
+fill.position.set(30, 30, 60);
 scene.add(fill);
 
-// земля: песок, мраморный двор под сафом и вокруг Каабы
+// земля, мраморный двор и матаф
 const sand = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600), new THREE.MeshStandardMaterial({ color: '#D7B07C', roughness: 1 }));
 sand.rotation.x = -Math.PI / 2; scene.add(sand);
-const saffDepth = rowsTotal * SZ;
-const marble = new THREE.Mesh(new THREE.PlaneGeometry(ROW * SX + 16, saffDepth + (-KAABA_Z) + 40), new THREE.MeshStandardMaterial({ color: '#F1EADB', roughness: 0.55 }));
-marble.rotation.x = -Math.PI / 2; marble.position.set(0, 0.04, (saffDepth + KAABA_Z) / 2 - 2); scene.add(marble);
-const court = new THREE.Mesh(new THREE.CircleGeometry(26, 64), new THREE.MeshStandardMaterial({ color: '#FAF6EE', roughness: 0.4 }));
-court.rotation.x = -Math.PI / 2; court.position.set(0, 0.08, KAABA_Z); scene.add(court);
+const plaza = new THREE.Mesh(new THREE.CircleGeometry(62, 96), new THREE.MeshStandardMaterial({ color: '#EFE8D8', roughness: 0.6 }));
+plaza.rotation.x = -Math.PI / 2; plaza.position.y = 0.04; scene.add(plaza);
+const mataf = new THREE.Mesh(new THREE.CircleGeometry(R_MAX + 3, 96), new THREE.MeshStandardMaterial({ color: '#FBF8F1', roughness: 0.35 }));
+mataf.rotation.x = -Math.PI / 2; mataf.position.y = 0.08; scene.add(mataf);
 
-// Кааба
+// Кааба: кисва, золотой пояс, дверь, Чёрный камень
 const kaaba = new THREE.Group();
-const kBox = new THREE.Mesh(new THREE.BoxGeometry(7, 8, 6.4), new THREE.MeshStandardMaterial({ color: '#141414', roughness: 0.75 }));
-kBox.position.y = 4; kaaba.add(kBox);
+const KW = 7, KD = 6.4, KH = 8;
+const kBox = new THREE.Mesh(new THREE.BoxGeometry(KW, KH, KD), new THREE.MeshStandardMaterial({ color: '#141414', roughness: 0.75 }));
+kBox.position.y = KH / 2; kaaba.add(kBox);
 const goldMat = new THREE.MeshStandardMaterial({ color: '#D9AE4E', emissive: '#6A4A10', emissiveIntensity: 0.6, metalness: 0.6, roughness: 0.35 });
-const band = new THREE.Mesh(new THREE.BoxGeometry(7.06, 0.55, 6.46), goldMat); band.position.y = 5.6; kaaba.add(band);
-const door = new THREE.Mesh(new THREE.BoxGeometry(1.3, 2.6, 0.08), goldMat); door.position.set(1.6, 3.4, 3.22); kaaba.add(door);
-kaaba.position.z = KAABA_Z; scene.add(kaaba);
+const band = new THREE.Mesh(new THREE.BoxGeometry(KW + 0.06, 0.55, KD + 0.06), goldMat); band.position.y = 5.6; kaaba.add(band);
+const door = new THREE.Mesh(new THREE.BoxGeometry(1.3, 2.6, 0.08), goldMat); door.position.set(-1.4, 3.4, KD / 2 + 0.02); kaaba.add(door);
+const base = new THREE.Mesh(new THREE.BoxGeometry(KW + 0.5, 0.35, KD + 0.5), new THREE.MeshStandardMaterial({ color: '#D8D2C4', roughness: 0.5 })); base.position.y = 0.17; kaaba.add(base);
+const silver = new THREE.MeshStandardMaterial({ color: '#D9DDE2', metalness: 0.9, roughness: 0.25 });
+const bsFrame = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.08, 10, 24), silver);
+bsFrame.position.set(-KW / 2 - 0.02, 1.5, KD / 2 + 0.02); bsFrame.rotation.y = -Math.PI / 4; kaaba.add(bsFrame);
+const stoneBlack = new THREE.Mesh(new THREE.CircleGeometry(0.26, 20), new THREE.MeshStandardMaterial({ color: '#2A1E1A', roughness: 0.4 }));
+stoneBlack.position.set(-KW / 2 - 0.05, 1.5, KD / 2 + 0.05); stoneBlack.rotation.y = -Math.PI / 4; kaaba.add(stoneBlack);
+scene.add(kaaba);
+// Хиджр Исмаил: низкая полукруглая белая стенка у северо-западной грани
+const hijr = new THREE.Mesh(new THREE.TorusGeometry(3.6, 0.32, 8, 48, Math.PI), new THREE.MeshStandardMaterial({ color: '#F4F1EA', roughness: 0.5 }));
+hijr.rotation.set(Math.PI / 2, 0, -Math.PI / 2); hijr.position.set(KW / 2 + 0.6, 0.75, 0); hijr.scale.set(1, 1, 3.6);
+scene.add(hijr);
+// Макам Ибрахим: золотая решётка с куполом перед дверью
+const maqam = new THREE.Group();
+const mq1 = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.65, 1.6, 8), goldMat); mq1.position.y = 0.95; maqam.add(mq1);
+const mq2 = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), goldMat); mq2.position.y = 1.75; maqam.add(mq2);
+const mq3 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.5, 8), goldMat); mq3.position.y = 2.5; maqam.add(mq3);
+maqam.position.set(-1.4, 0, KD / 2 + 4.2); scene.add(maqam);
 
-// галерея и минареты вокруг
+// галерея по кругу, минареты, башня, горы
 const stone = new THREE.MeshStandardMaterial({ color: '#E4D6BC', roughness: 0.8 });
-for (let k = 0; k < 7; k++) {
-  const a = -Math.PI * 0.85 + k * (Math.PI * 1.7 / 6);
-  const r = 36;
+const arcade = new THREE.Mesh(new THREE.CylinderGeometry(48, 48, 9, 96, 1, true), new THREE.MeshStandardMaterial({ color: '#E8DCC4', roughness: 0.85, side: THREE.DoubleSide }));
+arcade.position.y = 4.5; scene.add(arcade);
+const arcadeTop = new THREE.Mesh(new THREE.RingGeometry(48, 54, 96), new THREE.MeshStandardMaterial({ color: '#DCCDB0', roughness: 0.9, side: THREE.DoubleSide }));
+arcadeTop.rotation.x = -Math.PI / 2; arcadeTop.position.y = 9; scene.add(arcadeTop);
+for (let k = 0; k < 9; k++) {
+  const a = k / 9 * Math.PI * 2 + 0.2, r = 55;
   const m = new THREE.Group();
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.9, 26, 10), stone); shaft.position.y = 13; m.add(shaft);
-  const balc = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.5, 10), stone); balc.position.y = 19; m.add(balc);
-  const top = new THREE.Mesh(new THREE.ConeGeometry(0.75, 4, 10), goldMat); top.position.y = 28; m.add(top);
-  m.position.set(Math.sin(a) * r, 0, KAABA_Z - Math.cos(a) * r);
-  if (m.position.z > KAABA_Z + 20) continue;
-  scene.add(m);
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.0, 30, 10), stone); shaft.position.y = 15; m.add(shaft);
+  const balc = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.6, 10), stone); balc.position.y = 22; m.add(balc);
+  const top = new THREE.Mesh(new THREE.ConeGeometry(0.85, 4.5, 10), goldMat); top.position.y = 32; m.add(top);
+  m.position.set(Math.sin(a) * r, 0, Math.cos(a) * r); scene.add(m);
 }
-const arcade = new THREE.Mesh(new THREE.CylinderGeometry(40, 40, 7, 64, 1, true, Math.PI * 0.62, Math.PI * 0.76), new THREE.MeshStandardMaterial({ color: '#E8DCC4', roughness: 0.85, side: THREE.DoubleSide }));
-arcade.position.set(0, 3.5, KAABA_Z); scene.add(arcade);
-// часовая башня вдали
 const tower = new THREE.Group();
 const tBody = new THREE.Mesh(new THREE.BoxGeometry(14, 70, 14), new THREE.MeshStandardMaterial({ color: '#D9C9A8', roughness: 0.8 })); tBody.position.y = 35; tower.add(tBody);
 const clock = new THREE.Mesh(new THREE.CircleGeometry(4.5, 32), new THREE.MeshStandardMaterial({ color: '#F4F1E8', emissive: '#5FA36E', emissiveIntensity: 0.5 })); clock.position.set(0, 60, 7.05); tower.add(clock);
 const spire = new THREE.Mesh(new THREE.ConeGeometry(4, 26, 8), goldMat); spire.position.y = 83; tower.add(spire);
-tower.position.set(-20, 0, KAABA_Z - 120); scene.add(tower);
-// горы Хиджаза кольцом
+tower.position.set(-25, 0, -120); scene.add(tower);
 const rockMat = new THREE.MeshStandardMaterial({ color: '#9A6E4C', roughness: 1, flatShading: true });
 for (let k = 0; k < 26; k++) {
   const a = (k / 26) * Math.PI * 2, r = 230 + rnd(k, 1) * 80, h = 30 + rnd(k, 2) * 50;
   const m = new THREE.Mesh(new THREE.ConeGeometry(40 + rnd(k, 3) * 30, h, 6), rockMat);
-  m.position.set(Math.sin(a) * r, h / 2 - 2, KAABA_Z + Math.cos(a) * r); m.rotation.y = rnd(k, 4) * 3;
+  m.position.set(Math.sin(a) * r, h / 2 - 2, Math.cos(a) * r); m.rotation.y = rnd(k, 4) * 3;
   scene.add(m);
 }
 
-/* ================= люди (instanced) ================= */
+/* ================= люди: инстансы, движение в шейдере ================= */
 function cloth(rTop, rBot, h, folds = 9, amp = 0.04, seg = 18) {
   const g = new THREE.CylinderGeometry(rTop, rBot, h, seg, 3, false);
   const p = g.attributes.position;
@@ -314,99 +346,111 @@ function cloth(rTop, rBot, h, folds = 9, amp = 0.04, seg = 18) {
 }
 const at = (g, x, y, z, rx = 0, rz = 0, s = null) => { if (s) g.scale(...s); if (rx) g.rotateX(rx); if (rz) g.rotateZ(rz); g.translate(x, y, z); return g; };
 const strip = (g) => { g.deleteAttribute('uv'); return g.index ? g.toNonIndexed() : g; };
-// одежда: подол, корпус, плечи, руки сложены спереди (со спины видны локти)
+// белые одежды ихрама, голова покрыта тканью; лиц нет. Человек смотрит в -z.
 const robeGeo = mergeGeometries([
   at(cloth(0.235, 0.33, 0.92), 0, 0.51, 0),
   at(cloth(0.21, 0.245, 0.5, 7, 0.03, 14), 0, 1.2, 0),
   at(new THREE.SphereGeometry(0.28, 14, 8), 0, 1.44, 0, 0, 0, [1.05, 0.42, 0.68]),
-  at(new THREE.CylinderGeometry(0.068, 0.074, 0.32, 8), -0.26, 1.28, 0.02, -0.3, -0.12),
-  at(new THREE.CylinderGeometry(0.068, 0.074, 0.32, 8), 0.26, 1.28, 0.02, -0.3, 0.12),
-  at(new THREE.CylinderGeometry(0.075, 0.09, 0.3, 8), -0.17, 1.12, -0.16, -1.6, 0.9),
-  at(new THREE.CylinderGeometry(0.075, 0.09, 0.3, 8), 0.17, 1.12, -0.16, -1.6, -0.9),
+  at(new THREE.CylinderGeometry(0.068, 0.074, 0.55, 8), -0.27, 1.17, 0, 0.12, -0.08),
+  at(new THREE.CylinderGeometry(0.068, 0.074, 0.55, 8), 0.27, 1.17, 0, -0.12, 0.08),
+  at(new THREE.SphereGeometry(0.16, 14, 10), 0, 1.72, 0.02, 0, 0, [1, 1.05, 1.05]),   // покрывало на голове
+  at(cloth(0.14, 0.24, 0.32, 6, 0.05, 12), 0, 1.56, 0.04),                           // ткань на плечах
 ].map(strip));
 const skinGeo = mergeGeometries([
-  at(new THREE.SphereGeometry(0.125, 14, 10), 0, 1.69, 0.01, 0, 0, [0.95, 1.05, 1]),
-  at(new THREE.CylinderGeometry(0.055, 0.065, 0.1, 8), 0, 1.57, 0),
+  at(new THREE.BoxGeometry(0.07, 0.1, 0.04), -0.29, 0.86, 0.0),
+  at(new THREE.BoxGeometry(0.07, 0.1, 0.04), 0.29, 0.86, 0.0),
   at(new THREE.BoxGeometry(0.08, 0.05, 0.22), -0.09, 0.03, -0.1),
   at(new THREE.BoxGeometry(0.08, 0.05, 0.22), 0.09, 0.03, -0.1),
 ].map(strip));
-const capGeo = new THREE.SphereGeometry(0.13, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2.1); capGeo.translate(0, 1.72, 0.01);
-const rugGeo = new THREE.BoxGeometry(0.82, 0.025, 1.75); rugGeo.translate(0, 0.07, -0.55);
-const shadowGeo = new THREE.CircleGeometry(0.38, 16); shadowGeo.rotateX(-Math.PI / 2); shadowGeo.translate(0, 0.1, 0.02);
+const shadowGeo = new THREE.CircleGeometry(0.36, 16); shadowGeo.rotateX(-Math.PI / 2); shadowGeo.translate(0, 0.12, 0.02);
 
-const mats = {
-  robe: new THREE.MeshStandardMaterial({ roughness: 0.8 }),
-  skin: new THREE.MeshStandardMaterial({ roughness: 0.7 }),
-  cap:  new THREE.MeshStandardMaterial({ roughness: 0.7 }),
-  rug:  new THREE.MeshStandardMaterial({ roughness: 0.95 }),
-  shadow: new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.18, depthWrite: false }),
-};
-const inst = {
-  robe: new THREE.InstancedMesh(robeGeo, mats.robe, N),
-  skin: new THREE.InstancedMesh(skinGeo, mats.skin, N),
-  cap:  new THREE.InstancedMesh(capGeo, mats.cap, N),
-  rug:  new THREE.InstancedMesh(rugGeo, mats.rug, N),
-  shadow: new THREE.InstancedMesh(shadowGeo, mats.shadow, N),
-};
-const pos = new Float32Array(N * 3);
-const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), v3 = new THREE.Vector3(), col = new THREE.Color();
-for (let i = 0; i < N; i++) {
-  const p = placeOf(i);
-  const s = 0.94 + rnd(i, 7) * 0.12;
-  const jx = (rnd(i, 8) - 0.5) * 0.04;
-  pos[i * 3] = p.x + jx; pos[i * 3 + 1] = 0; pos[i * 3 + 2] = p.z;
-  q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), (rnd(i, 9) - 0.5) * 0.08);
-  m4.compose(v3.set(p.x + jx, 0, p.z), q, sc.set(s, s, s));
-  inst.robe.setMatrixAt(i, m4); inst.skin.setMatrixAt(i, m4); inst.cap.setMatrixAt(i, m4); inst.shadow.setMatrixAt(i, m4);
-  m4.compose(v3.set(p.x, 0, p.z), new THREE.Quaternion(), sc.set(1, 1, 1));
-  inst.rug.setMatrixAt(i, m4);
-  inst.robe.setColorAt(i, col.set(ROBES[Math.floor(rnd(i, 1) * ROBES.length)]));
-  inst.skin.setColorAt(i, col.set(SKINS[Math.floor(rnd(i, 2) * SKINS.length)]));
-  inst.cap.setColorAt(i, col.set(CAPS[Math.floor(rnd(i, 3) * CAPS.length)]));
-  inst.rug.setColorAt(i, col.set(RUGS[(p.row + Math.floor(rnd(i, 4) * 2)) % RUGS.length]));
+const uTime = { value: 0 };
+const polarAttr = new THREE.InstancedBufferAttribute(polar, 4);
+function tawaf(mat) {
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uTime = uTime;
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', `#include <common>
+        attribute vec4 aPolar; uniform float uTime;
+        float twTh(){ return aPolar.y + aPolar.z * uTime; }
+        vec3 twRot(vec3 v){ float t = twTh(); float c = cos(t), s = sin(t); return vec3(v.x*c + v.z*s, v.y, -v.x*s + v.z*c); }`)
+      .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
+        objectNormal = twRot(objectNormal);`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+        { float t = twTh();
+          transformed = twRot(transformed * aPolar.w);
+          transformed += vec3(aPolar.x * cos(t), abs(sin(uTime * 3.6 + aPolar.y * 17.0)) * 0.035, -aPolar.x * sin(t)); }`);
+  };
+  return mat;
 }
-for (const k in inst) { inst[k].instanceMatrix.needsUpdate = true; if (inst[k].instanceColor) inst[k].instanceColor.needsUpdate = true; inst[k].frustumCulled = false; scene.add(inst[k]); }
+const mats = {
+  robe: tawaf(new THREE.MeshStandardMaterial({ roughness: 0.82 })),
+  skin: tawaf(new THREE.MeshStandardMaterial({ roughness: 0.7 })),
+  shadow: tawaf(new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.16, depthWrite: false })),
+};
+const inst = {};
+const col = new THREE.Color();
+for (const [k, geo] of [['robe', robeGeo], ['skin', skinGeo], ['shadow', shadowGeo]]) {
+  geo.setAttribute('aPolar', polarAttr);
+  const m = new THREE.InstancedMesh(geo, mats[k], N);
+  m.frustumCulled = false;
+  inst[k] = m; scene.add(m);
+}
+for (let i = 0; i < N; i++) {
+  inst.robe.setColorAt(i, col.set(IHRAM[Math.floor(rnd(i, 1) * IHRAM.length)]));
+  inst.skin.setColorAt(i, col.set(SKINS[Math.floor(rnd(i, 2) * SKINS.length)]));
+}
+inst.robe.instanceColor.needsUpdate = inst.skin.instanceColor.needsUpdate = true;
 
-// подсветка найденного: золотой силуэт, луч света, кольцо
-const glowMat = new THREE.MeshStandardMaterial({ color: '#F3D48A', emissive: '#E9C46A', emissiveIntensity: 1.2, transparent: true, opacity: 0.0, depthWrite: false });
+// найденный: золотой силуэт, луч, кольцо на полу (двигаются вместе с ним)
+const glowMat = new THREE.MeshStandardMaterial({ color: '#F3D48A', emissive: '#E9C46A', emissiveIntensity: 1.2, transparent: true, opacity: 0, depthWrite: false });
 const ghost = new THREE.Group();
-ghost.add(new THREE.Mesh(robeGeo, glowMat), new THREE.Mesh(skinGeo, glowMat), new THREE.Mesh(capGeo, glowMat));
-ghost.scale.setScalar(1.04); ghost.visible = false; scene.add(ghost);
+ghost.add(new THREE.Mesh(robeGeo, glowMat), new THREE.Mesh(skinGeo, glowMat));
+ghost.visible = false; scene.add(ghost);
 const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.42, 30, 24, 1, true), new THREE.ShaderMaterial({
   transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false,
   uniforms: { o: { value: 0 } },
   vertexShader: `varying float vy; void main(){ vy = uv.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
   fragmentShader: `varying float vy; uniform float o; void main(){ gl_FragColor = vec4(1.0, 0.82, 0.45, pow(1.0 - vy, 1.6) * 0.28 * o); }`,
 }));
-beam.position.y = 15; beam.visible = false; scene.add(beam);
-const ring = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.62, 48), new THREE.MeshBasicMaterial({ color: '#F3D48A', transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
-ring.rotation.x = -Math.PI / 2; ring.position.y = 0.12; ring.visible = false; scene.add(ring);
+beam.visible = false; scene.add(beam);
+const halo = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.62, 48), new THREE.MeshBasicMaterial({ color: '#F3D48A', transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+halo.rotation.x = -Math.PI / 2; halo.visible = false; scene.add(halo);
 
 /* ================= камера и управление ================= */
 const controls = new MapControls(camera, canvas);
 controls.enableDamping = true; controls.dampingFactor = 0.08;
 controls.screenSpacePanning = false;
-controls.minDistance = 2.2; controls.maxDistance = 140;
-controls.maxPolarAngle = 1.38; controls.minPolarAngle = 0.15;
-controls.zoomToCursor = false;
-const minZ = KAABA_Z - 10, maxZ = saffDepth + 25, maxX = ROW * SX / 2 + 20;
+controls.minDistance = 2.2; controls.maxDistance = 150;
+controls.maxPolarAngle = 1.38; controls.minPolarAngle = 0.12;
 controls.addEventListener('change', () => {
-  const t = controls.target;
-  const cx = THREE.MathUtils.clamp(t.x, -maxX, maxX), cz = THREE.MathUtils.clamp(t.z, minZ, maxZ);
-  if (cx !== t.x || cz !== t.z) { const dx = cx - t.x, dz = cz - t.z; t.x = cx; t.z = cz; camera.position.x += dx; camera.position.z += dz; }
+  const t = controls.target, r = Math.hypot(t.x, t.z), lim = 60;
+  if (r > lim) { const k = lim / r, dx = t.x * k - t.x, dz = t.z * k - t.z; t.x += dx; t.z += dz; camera.position.x += dx; camera.position.z += dz; }
   t.y = THREE.MathUtils.clamp(t.y, 0, 4);
 });
-const OVERVIEW = { pos: new THREE.Vector3(-22, 34, saffDepth + 46), look: new THREE.Vector3(0, 0, saffDepth * 0.35) };
-camera.position.set(0, 110, saffDepth + 160);
-controls.target.set(0, 0, KAABA_Z);
+const OVERVIEW = { pos: new THREE.Vector3(-26, 38, 52), look: new THREE.Vector3(0, 2, 0) };
+camera.position.set(0, 140, 220);
+controls.target.set(0, 2, 0);
 controls.update();
 
-let fly = null; // {p0,p1,t0,t1,dur,start}
+let fly = null, follow = -1;
 const easeIO = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
-function flyTo(p1, t1, dur = 2.2, arc = 0, onDone = null) {
-  fly = { p0: camera.position.clone(), t0: controls.target.clone(), p1, t1, dur, arc, start: performance.now(), onDone };
+const W1 = { x: 0, z: 0, th: 0, s: 1 }, W2 = { x: 0, z: 0, th: 0, s: 1 };
+// точка съёмки рядом с человеком: снаружи кольца и чуть позади, Кааба в кадре
+function shotFor(i, t) {
+  where(i, t, W1);
+  const nx = Math.cos(W1.th), nz = -Math.sin(W1.th);      // наружу от Каабы
+  const bx = Math.sin(W1.th), bz = Math.cos(W1.th);       // назад по ходу движения
+  return {
+    pos: new THREE.Vector3(W1.x + nx * 3.4 + bx * 2.2, 2.6, W1.z + nz * 3.4 + bz * 2.2),
+    look: new THREE.Vector3(W1.x * 0.8, 1.6, W1.z * 0.8),
+  };
+}
+function flyTo(getEnd, dur = 2.2, arc = 0, onDone = null) {
+  fly = { p0: camera.position.clone(), t0: controls.target.clone(), getEnd, dur, arc, start: performance.now(), onDone };
   controls.enabled = false;
 }
+canvas.addEventListener('pointerdown', () => { if (!fly) follow = -1; });
 
 /* ================= плашки ================= */
 const labelsEl = document.getElementById('labels');
@@ -416,44 +460,42 @@ const meTag = document.createElement('div'); meTag.className = 'tag me'; labelsE
 const handle = (p) => p[0] ? '@' + p[0] : p[1];
 let found = -1;
 const proj = new THREE.Vector3();
-function updateLabels() {
+const PX = new Float32Array(N), PZ = new Float32Array(N), D2 = new Float32Array(N), order = new Uint16Array(N);
+function updateLabels(t) {
   const W = innerWidth, H = innerHeight;
-  const t = controls.target;
-  const dist = camera.position.distanceTo(t);
+  const dist = camera.position.distanceTo(controls.target);
   let used = 0;
-  if (dist < 34) {
-    const rowC = Math.round(t.z / SZ), span = dist < 14 ? 5 : 8;
-    const cand = [];
-    for (let r = Math.max(0, rowC - span); r <= Math.min(rowsTotal - 1, rowC + span); r++) {
-      for (let c = 0; c < ROW; c++) {
-        const i = r * ROW + c; if (i >= N || i === found) continue;
-        const dx = pos[i * 3] - camera.position.x, dz = pos[i * 3 + 2] - camera.position.z;
-        cand.push([dx * dx + dz * dz + (pos[i*3+1]), i]);
-      }
-    }
-    cand.sort((a, b) => a[0] - b[0]);
+  if (dist < 36) {
+    const cx = camera.position.x, cz = camera.position.z;
     const maxD2 = (dist < 14 ? 15 : 26) ** 2;
+    let m = 0;
+    for (let i = 0; i < N; i++) {
+      where(i, t, W2); PX[i] = W2.x; PZ[i] = W2.z;
+      const dx = W2.x - cx, dz = W2.z - cz, d2 = dx * dx + dz * dz;
+      if (d2 < maxD2 && i !== found) { D2[i] = d2; order[m++] = i; }
+    }
+    const cand = Array.from(order.subarray(0, m)).sort((a, b) => D2[a] - D2[b]);
     const boxes = [];
-    for (const [d2, i] of cand) {
-      if (used >= POOL || d2 > maxD2) break;
-      proj.set(pos[i * 3], 2.02, pos[i * 3 + 2]).project(camera);
+    for (const i of cand) {
+      if (used >= POOL) break;
+      proj.set(PX[i], 2.1, PZ[i]).project(camera);
       if (proj.z > 1 || proj.x < -1.1 || proj.x > 1.1 || proj.y < -1.1 || proj.y > 1.1) continue;
-      const sx = (proj.x + 1) / 2 * W, sy = (1 - proj.y) / 2 * H;
-      const scale = THREE.MathUtils.clamp(9 / Math.sqrt(d2), 0.55, 1.15);
+      const sx = (proj.x + 1) / 2 * W, sy = (1 - proj.y) / 2 * H, d = Math.sqrt(D2[i]);
+      const scale = THREE.MathUtils.clamp(9 / d, 0.55, 1.15);
       const w = 70 * scale, h = 22 * scale;
       if (boxes.some(b => Math.abs(b[0] - sx) < (b[2] + w) / 2 && Math.abs(b[1] - sy) < (b[3] + h) / 2)) continue;
       boxes.push([sx, sy, w, h]);
-      const el = tags[used++];
-      const txt = handle(people[i]);
+      const el = tags[used++], txt = handle(people[i]);
       if (el.textContent !== txt) el.textContent = txt;
       el.style.display = 'block';
       el.style.transform = `translate(-50%, -100%) translate(${sx}px, ${sy}px) scale(${scale})`;
-      el.style.opacity = String(THREE.MathUtils.clamp(1.4 - Math.sqrt(d2) / (Math.sqrt(maxD2)), 0.35, 1));
+      el.style.opacity = String(THREE.MathUtils.clamp(1.4 - d / Math.sqrt(maxD2), 0.35, 1));
     }
   }
   for (let k = used; k < POOL; k++) tags[k].style.display = 'none';
   if (found >= 0) {
-    proj.set(pos[found * 3], 2.15, pos[found * 3 + 2]).project(camera);
+    where(found, t, W2);
+    proj.set(W2.x, 2.25, W2.z).project(camera);
     if (proj.z < 1) {
       meTag.style.display = 'block';
       meTag.style.transform = `translate(-50%, -100%) translate(${(proj.x + 1) / 2 * W}px, ${(1 - proj.y) / 2 * H}px)`;
@@ -463,20 +505,20 @@ function updateLabels() {
 
 /* ================= письмо ================= */
 const THANKS_C = [
-  'Твоё «Амин» под роликом мы прочитали. Спасибо, что ты встаёшь рядом с нами.',
-  'Мы начинали вчетвером. Сегодня нас уже {N}, и среди них ты. Спасибо, что откликаешься.',
-  'Саф держится плечом к плечу. Спасибо, что твоё плечо рядом с нашим.',
-  'Каждый, кто пишет «Амин», делает этот путь короче для всех. Спасибо, что ты один из нас.',
+  'Твоё «Амин» под роликом мы прочитали. Спасибо, что ты идёшь рядом с нами.',
+  'Мы начинали вчетвером. Сегодня вокруг Каабы нас уже {N}, и среди них ты. Спасибо, что откликаешься.',
+  'Мы идём плечом к плечу. Спасибо, что твоё плечо рядом с нашим.',
+  'Каждый, кто пишет «Амин», делает наш круг больше. Спасибо, что ты один из нас.',
 ];
 const THANKS_F = [
-  'Каждый новый человек в ряду приближает нас к Каабе. Спасибо, что ты с нами в этом пути.',
-  'Мы начинали вчетвером. Сегодня нас уже {N}, и среди них ты. Спасибо, что ты рядом.',
-  'Саф держится плечом к плечу. Спасибо, что твоё плечо рядом с нашим.',
-  'Без тебя этот ряд был бы короче. Спасибо, что ты идёшь вместе с нами.',
+  'Каждый новый человек делает наш круг вокруг Каабы больше. Спасибо, что ты с нами.',
+  'Мы начинали вчетвером. Сегодня вокруг Каабы нас уже {N}, и среди них ты. Спасибо, что ты рядом.',
+  'Мы идём плечом к плечу. Спасибо, что твоё плечо рядом с нашим.',
+  'Без тебя этот круг был бы меньше. Спасибо, что ты идёшь вместе с нами.',
 ];
 const WISHES = [
   'Пусть Аллах дарует тебе благо этого мира и благо мира вечного.',
-  'Пусть однажды ты встанешь в саф у Каабы не на экране, а наяву.',
+  'Пусть однажды ты совершишь таваф вокруг Каабы не на экране, а наяву.',
   'Пусть дорога в Мекку откроется тебе легко, а домой ты вернёшься с принятой умрой.',
   'Пусть каждый твой намаз будет принят.',
   'Пусть твои дуа будут услышаны, даже те, что ты произносишь шёпотом.',
@@ -487,16 +529,15 @@ const WISHES = [
   'Пусть твои близкие будут рядом и здоровы.',
   'Пусть каждое утро начинается с аята, а каждый вечер с благодарности.',
   'Пусть твой путь будет прямым, а шаги по нему лёгкими.',
+  'Пусть Аллах запишет тебе хадж, а твои грехи простит.',
 ];
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function letterHTML(i) {
   const [u, n, src] = people[i];
-  const p = placeOf(i);
   const h = hash(u || n);
   const name = (n && n.trim() && n.trim() !== '.') ? n.trim() : (u ? '@' + u : 'друг');
   const thanks = (src === 'c' ? THANKS_C : THANKS_F)[h % 4].replace('{N}', fmt(N));
-  // первое пожелание всегда о Мекке или о двух мирах, остальные по хэшу без повторов
-  const first = h % 2 === 0 ? 0 : 1;
+  const first = h % 2 === 0 ? 0 : 1;   // первое пожелание: два мира или таваф наяву
   const pool = WISHES.map((_, k) => k).filter(k => k !== first && !(first === 1 && k === 2));
   const picks = [first];
   let x = h;
@@ -505,7 +546,7 @@ function letterHTML(i) {
     <button class="close" id="closeLetter" aria-label="Закрыть">×</button>
     <div class="meta">Письмо № ${fmt(i + 1)} из ${fmt(N)}</div>
     <h2>Ассаляму алейкум, ${esc(name)}!</h2>
-    <p class="place">Твоё место в сафе: ряд ${p.row + 1}, место ${p.col + 1}${u ? ` · @${esc(u)}` : ''}</p>
+    <p class="place">Ты совершаешь таваф вместе с нами: кольцо ${ring[i] + 1} от Каабы${u ? ` · @${esc(u)}` : ''}</p>
     <p class="body">${esc(thanks)}</p>
     <p class="body">Мы желаем тебе:</p>
     <ul class="wishes">${picks.map(k => `<li>${esc(WISHES[k])}</li>`).join('')}</ul>
@@ -519,23 +560,23 @@ function letterHTML(i) {
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.6 2.3 13.5 12l-9.9 9.7c-.4-.2-.6-.6-.6-1.1V3.4c0-.5.2-.9.6-1.1Zm11.1 10.9 2.5 2.5-11.8 6.7 9.3-9.2Zm3.6-3.4 2.9 1.6c.9.5.9 1.8 0 2.3l-2.9 1.6-2.7-2.7 2.7-2.8ZM5.4 1.6l11.8 6.7-2.5 2.5-9.3-9.2Z"/></svg>
           Google Play</a>
         <a class="store store--ios" href="${APPSTORE}" data-store="appstore" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.8 1.2 1.8 2.6 3.1 2.5 1.2 0 1.7-.8 3.2-.8s1.9.8 3.2.8c1.3 0 2.2-1.2 3-2.5 1-1.4 1.3-2.7 1.4-2.8-.1 0-2.6-1-2.6-4.1ZM13.9 5c.7-.8 1.1-1.9 1-3-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.8-1 2.9 1.1.1 2.2-.6 2.9-1.4Z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.600-1.8 3.1-.5 7.7 1.3 10.2.8 1.2 1.8 2.6 3.1 2.5 1.2 0 1.700-.8 3.200-.8s1.9.8 3.2.8c1.3 0 2.2-1.2 3-2.5 1-1.4 1.3-2.7 1.4-2.8-.1 0-2.6-1-2.6-4.1ZM13.9 5c.7-.8 1.1-1.9 1-3-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.8-1 2.9 1.1.1 2.2-.6 2.9-1.4Z"/></svg>
           App Store</a>
       </div>
       <div class="gate">Внутри TikTok App Store не открывается. Нажми <b>⋯</b> в правом верхнем углу → <b>«Открыть в браузере»</b>, а там кнопку App Store. Или найди в App Store «Quran Widget».</div>
       <div class="row2">
         <button class="soft" id="shareBtn">Поделиться</button>
-        <button class="soft" id="lookBtn">Посмотреть вокруг</button>
+        <button class="soft" id="lookBtn">Идти вместе</button>
       </div>
     </div>
-    <p class="fine">Не хочешь быть в сафе? Напиши нам в TikTok @quran.widget.app, уберём.</p>`;
+    <p class="fine">Не хочешь быть здесь? Напиши нам в TikTok @quran.widget.app, уберём.</p>`;
 }
 const sheet = document.getElementById('sheet'), letter = document.getElementById('letter');
 function openLetter(i) {
   letter.innerHTML = letterHTML(i);
   sheet.scrollTop = 0;
   sheet.classList.add('on');
-  track('saff_letter_open', { src: people[i][2], row: placeOf(i).row + 1 });
+  track('saff_letter_open', { src: people[i][2], ring: ring[i] + 1 });
   document.getElementById('closeLetter').onclick = closeLetter;
   document.getElementById('lookBtn').onclick = closeLetter;
   document.getElementById('shareBtn').onclick = () => share(i);
@@ -547,11 +588,9 @@ function toast(t) { toastEl.textContent = t; toastEl.classList.add('on'); setTim
 async function share(i) {
   const u = people[i][0] || people[i][1];
   const url = location.origin + location.pathname + '?n=' + encodeURIComponent(u);
-  const text = 'Я стою в сафе на пути к Каабе. Найди и себя:';
+  const text = 'Я совершаю таваф вокруг Каабы вместе со всеми. Найди и себя:';
   track('saff_share', {});
-  try {
-    if (navigator.share) { await navigator.share({ title: 'Наш саф', text, url }); return; }
-  } catch (e) { return; }
+  try { if (navigator.share) { await navigator.share({ title: 'Вокруг Каабы', text, url }); return; } } catch (e) { return; }
   try { await navigator.clipboard.writeText(text + ' ' + url); toast('Ссылка скопирована'); } catch (e) { toast(url); }
 }
 
@@ -583,9 +622,7 @@ function renderResults(q) {
 }
 qEl.addEventListener('input', () => renderResults(qEl.value));
 qEl.addEventListener('focus', () => { hideIntro(); if (qEl.value) renderResults(qEl.value); });
-qEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') { const li = resEl.querySelector('li[data-i]'); if (li) pick(+li.dataset.i); }
-});
+qEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const li = resEl.querySelector('li[data-i]'); if (li) pick(+li.dataset.i); } });
 resEl.addEventListener('click', (e) => { const li = e.target.closest('li[data-i]'); if (li) pick(+li.dataset.i); });
 document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.search')) resEl.classList.remove('on'); });
 
@@ -594,14 +631,11 @@ function pick(i, fromLink = false) {
   resEl.classList.remove('on'); qEl.blur();
   qEl.value = handle(people[i]);
   sheet.classList.remove('on');
-  found = i;
+  found = i; follow = -1;
   meTag.textContent = handle(people[i]);
-  const x = pos[i * 3], z = pos[i * 3 + 2];
-  ghost.position.set(x, 0, z); beam.position.set(x, 15, z); ring.position.set(x, 0.12, z);
-  ghost.visible = beam.visible = ring.visible = true; pulseStart = performance.now();
+  ghost.visible = beam.visible = halo.visible = true; pulseStart = performance.now();
   track('saff_found', { src: people[i][2], via: fromLink ? 'link' : 'search' });
-  const cam = new THREE.Vector3(x - 1.5, 2.7, z + 4.3);
-  flyTo(cam, new THREE.Vector3(x, 1.3, z), fromLink ? 3.2 : 2.4, 9, () => setTimeout(() => openLetter(i), 650));
+  flyTo(() => shotFor(i, now()), fromLink ? 3.2 : 2.6, 10, () => { follow = i; setTimeout(() => openLetter(i), 650); });
 }
 
 /* ================= вступление ================= */
@@ -613,25 +647,42 @@ canvas.addEventListener('pointerdown', () => { if (!fly) hideIntro(); });
 
 /* ================= цикл ================= */
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight, false); });
-let frame = 0;
-function tick(now) {
+let frame = 0, lastF = null;
+function tick() {
+  const t = now();
+  uTime.value = t;
   if (fly) {
-    const k = Math.min(1, (now - fly.start) / (fly.dur * 1000)), e = easeIO(k);
-    camera.position.lerpVectors(fly.p0, fly.p1, e);
+    const k = Math.min(1, (performance.now() - fly.start) / (fly.dur * 1000)), e = easeIO(k);
+    const end = fly.getEnd();
+    camera.position.lerpVectors(fly.p0, end.pos, e);
     camera.position.y += Math.sin(Math.PI * e) * fly.arc;
-    controls.target.lerpVectors(fly.t0, fly.t1, e);
+    controls.target.lerpVectors(fly.t0, end.look, e);
     camera.lookAt(controls.target);
-    if (k >= 1) { const cb = fly.onDone; fly = null; controls.enabled = true; controls.update(); cb && cb(); }
-  } else controls.update();
-  if (found >= 0) {
-    const t = (now - pulseStart) / 1000;
-    const o = Math.min(1, t / 0.8);
-    glowMat.opacity = o * (0.35 + 0.15 * Math.sin(t * 3));
-    beam.material.uniforms.o.value = o;
-    ring.material.opacity = o * (0.9 - (t % 1.6) / 1.6 * 0.9);
-    ring.scale.setScalar(1 + (t % 1.6) * 0.9);
+    if (k >= 1) { const cb = fly.onDone; fly = null; controls.enabled = true; controls.update(); lastF = null; cb && cb(); }
+  } else {
+    if (follow >= 0) {
+      // камера идёт рядом с человеком по кругу
+      where(follow, t, W1);
+      if (lastF) {
+        const dth = W1.th - lastF.th, c = Math.cos(dth), s = Math.sin(dth);
+        for (const v of [camera.position, controls.target]) { const x = v.x, z = v.z; v.x = x * c + z * s; v.z = -x * s + z * c; }
+      }
+      lastF = { th: W1.th };
+    } else lastF = null;
+    controls.update();
   }
-  if ((frame++ & 1) === 0 || fly) updateLabels();
+  if (found >= 0) {
+    where(found, t, W1);
+    const bob = Math.abs(Math.sin(t * 3.6 + polar[found * 4 + 1] * 17)) * 0.035;
+    ghost.position.set(W1.x, bob, W1.z); ghost.rotation.y = W1.th; ghost.scale.setScalar(W1.s * 1.04);
+    beam.position.set(W1.x, 15, W1.z); halo.position.set(W1.x, 0.14, W1.z);
+    const p = (performance.now() - pulseStart) / 1000, o = Math.min(1, p / 0.8);
+    glowMat.opacity = o * (0.35 + 0.15 * Math.sin(p * 3));
+    beam.material.uniforms.o.value = o;
+    halo.material.opacity = o * (0.9 - (p % 1.6) / 1.6 * 0.9);
+    halo.scale.setScalar(1 + (p % 1.6) * 0.9);
+  }
+  if ((frame++ & 1) === 0 || fly || follow >= 0) updateLabels(t);
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
 }
@@ -639,11 +690,10 @@ requestAnimationFrame(tick);
 document.getElementById('loading').classList.add('done');
 track('saff_open', { ref: document.referrer ? new URL(document.referrer).hostname : '', link: !!new URLSearchParams(location.search).get('n') });
 
-// открытие: облёт от Каабы к сафу, или сразу к человеку по ссылке ?n=
 const linkN = norm(new URLSearchParams(location.search).get('n') || '');
 const linked = linkN ? index.find(([u, n]) => u === linkN || n === linkN) : null;
 if (linked) { hideIntro(); setTimeout(() => pick(linked[2], true), 300); }
-else flyTo(OVERVIEW.pos.clone(), OVERVIEW.look.clone(), 4.5, 0);
+else flyTo(() => OVERVIEW, 4.5, 0);
 </script>
 </body>
 </html>
