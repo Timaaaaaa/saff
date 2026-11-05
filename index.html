@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Наш саф</title>
+<meta name="description" content="Все, кто встал с нами в ряд на пути к Каабе. Найди себя и забери своё письмо.">
+<meta property="og:title" content="Наш саф — найди себя">
+<meta property="og:description" content="Мы не смогли уместить всех в одно видео. Здесь стоят все.">
+<meta name="theme-color" content="#1B1530">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,500;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night: #1B1530;
+    --ink: #F7F1E6;
+    --muted: #CBBFA8;
+    --gold: #E9C46A;
+    --gold-deep: #B88A2E;
+    --green: #1F6B45;
+    --green-bright: #2E8B57;
+    --paper: #FBF5E8;
+    --paper-ink: #2A2216;
+    --paper-muted: #7A6A50;
+    --serif: "Alegreya", Georgia, serif;
+    --sans: "Inter", system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--night); color: var(--ink); font-family: var(--sans); overflow: hidden; overscroll-behavior: none; }
+  #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+
+  /* ---------- верхняя панель поиска ---------- */
+  .top { position: fixed; left: 0; right: 0; top: 0; padding: max(12px, env(safe-area-inset-top)) 16px 0; z-index: 20; pointer-events: none; }
+  .top > * { pointer-events: auto; }
+  .count { font: 600 12px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); text-shadow: 0 1px 6px rgba(0,0,0,.6); margin: 0 0 8px 4px; }
+  .search { position: relative; max-width: 520px; }
+  .search input {
+    width: 100%; height: 50px; border-radius: 14px; border: 1.5px solid rgba(233,196,106,.55);
+    background: rgba(20,16,36,.82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    color: var(--ink); font: 500 17px var(--sans); padding: 0 16px 0 44px; outline: none;
+  }
+  .search input::placeholder { color: #A99F8C; }
+  .search input:focus { border-color: var(--gold); }
+  .search svg { z-index: 2; pointer-events: none; position: absolute; left: 14px; top: 15px; width: 20px; height: 20px; color: var(--gold); }
+  .results { list-style: none; margin: 6px 0 0; padding: 6px; border-radius: 14px; background: rgba(20,16,36,.95); border: 1px solid rgba(233,196,106,.25); max-height: 50vh; overflow-y: auto; display: none; }
+  .results.on { display: block; }
+  .results li { padding: 10px 12px; border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+  .results li:hover, .results li.sel { background: rgba(233,196,106,.14); }
+  .results .u { font: 600 15px var(--sans); color: var(--ink); }
+  .results .n { font: 400 13px var(--sans); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .results .none { color: var(--muted); font-size: 14px; line-height: 1.45; cursor: default; }
+  .results .none:hover { background: none; }
+
+  /* ---------- плашки с никами над головами ---------- */
+  #labels { position: fixed; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
+  .tag {
+    position: absolute; left: 0; top: 0; transform-origin: 50% 100%;
+    padding: 3px 8px; border-radius: 7px; white-space: nowrap;
+    background: rgba(31,107,69,.92); color: #fff; font: 600 12px/1.2 var(--sans);
+    border: 1px solid rgba(255,255,255,.25); box-shadow: 0 2px 8px rgba(0,0,0,.35);
+    will-change: transform, opacity; display: none;
+  }
+  .tag::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 1px; height: 5px; background: rgba(255,255,255,.6); }
+  .tag.me { background: linear-gradient(180deg, #F3D48A, #D9A93F); color: #2A1E05; font-size: 15px; padding: 6px 12px; border-color: #FFF3CF; box-shadow: 0 0 24px rgba(233,196,106,.85); }
+
+  /* ---------- вступление ---------- */
+  .intro {
+    position: fixed; left: 16px; right: 16px; bottom: max(20px, env(safe-area-inset-bottom)); z-index: 15;
+    max-width: 520px; margin: 0 auto; padding: 22px 22px 18px; border-radius: 20px;
+    background: rgba(20,16,36,.86); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(233,196,106,.35); transition: opacity .5s, transform .5s;
+  }
+  .intro.hide { opacity: 0; transform: translateY(20px); pointer-events: none; }
+  .intro h1 { font: 700 26px/1.15 var(--serif); margin: 0 0 10px; color: var(--ink); }
+  .intro p { margin: 0 0 16px; font-size: 15px; line-height: 1.5; color: var(--muted); }
+  .intro b { color: var(--gold); font-weight: 600; }
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 52px; border: 0; border-radius: 14px;
+    background: linear-gradient(180deg, #F0CF7C, #D4A43E); color: #2A1E05; font: 700 16px var(--sans); cursor: pointer; text-decoration: none;
+  }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid rgba(233,196,106,.5); height: 46px; font-weight: 600; font-size: 15px; }
+  .hint { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 10; font-size: 12px; color: var(--muted); background: rgba(20,16,36,.7); padding: 6px 12px; border-radius: 99px; white-space: nowrap; opacity: 0; transition: opacity .6s; pointer-events: none; }
+  .hint.on { opacity: 1; }
+
+  /* ---------- письмо ---------- */
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; max-height: 88vh; overflow-y: auto;
+    transform: translateY(105%); transition: transform .6s cubic-bezier(.2,.8,.2,1);
+    padding: 0 16px max(16px, env(safe-area-inset-bottom));
+  }
+  .sheet.on { transform: none; }
+  .letter {
+    max-width: 520px; margin: 0 auto; background: var(--paper); color: var(--paper-ink); border-radius: 18px 18px 18px 18px;
+    padding: 26px 24px 22px; position: relative; box-shadow: 0 -10px 40px rgba(0,0,0,.45);
+    background-image: radial-gradient(circle at 20% 0%, rgba(233,196,106,.18), transparent 50%), radial-gradient(circle at 100% 100%, rgba(31,107,69,.08), transparent 45%);
+    border: 1px solid #E8D9B8;
+  }
+  .letter::before { content: ""; position: absolute; inset: 8px; border: 1px solid rgba(184,138,46,.35); border-radius: 12px; pointer-events: none; }
+  .close { position: absolute; right: 12px; top: 12px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(42,34,22,.07); color: var(--paper-ink); font-size: 20px; cursor: pointer; z-index: 2; }
+  .meta { font: 600 11px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--gold-deep); margin-bottom: 14px; }
+  .letter h2 { font: 700 26px/1.2 var(--serif); margin: 0 0 6px; overflow-wrap: anywhere; }
+  .place { font: italic 500 16px/1.4 var(--serif); color: var(--paper-muted); margin: 0 0 16px; }
+  .letter p.body { font: 500 17.5px/1.55 var(--serif); margin: 0 0 12px; }
+  .wishes { list-style: none; padding: 0; margin: 4px 0 14px; }
+  .wishes li { font: 500 17.5px/1.5 var(--serif); padding: 8px 0 8px 26px; position: relative; border-top: 1px dashed rgba(184,138,46,.3); }
+  .wishes li:first-child { border-top: 0; }
+  .wishes li::before { content: "✦"; position: absolute; left: 4px; top: 9px; color: var(--gold-deep); font-size: 13px; }
+  .amin { font: 700 20px var(--serif); color: var(--green); margin: 4px 0 2px; }
+  .sign { font: italic 500 15px/1.4 var(--serif); color: var(--paper-muted); margin: 0 0 18px; }
+  .keep { border-top: 1px solid rgba(184,138,46,.3); padding-top: 16px; }
+  .keep h3 { font: 700 16px/1.3 var(--sans); margin: 0 0 4px; }
+  .keep p { font: 400 14px/1.45 var(--sans); color: var(--paper-muted); margin: 0 0 12px; }
+  .stores { display: grid; gap: 8px; }
+  .store { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; border-radius: 14px; background: #14110B; color: #fff; text-decoration: none; font: 600 15px var(--sans); }
+  .store svg { width: 20px; height: 20px; }
+  html[data-platform="ios"] .store--android, html[data-platform="android"] .store--ios { display: none; }
+  .gate { display: none; margin-top: 10px; padding: 12px 14px; border-radius: 12px; background: #FFF4D6; border: 1px solid #EBCF85; font: 400 13.5px/1.45 var(--sans); color: #5A4512; }
+  html[data-webview][data-platform="ios"] .gate { display: block; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .soft { height: 44px; border-radius: 12px; border: 1px solid rgba(42,34,22,.18); background: transparent; color: var(--paper-ink); font: 600 14px var(--sans); cursor: pointer; }
+  .fine { font: 400 12px/1.45 var(--sans); color: var(--paper-muted); margin: 14px 0 0; text-align: center; }
+  .toast { position: fixed; left: 50%; top: 90px; transform: translateX(-50%); z-index: 50; background: rgba(20,16,36,.95); color: var(--ink); padding: 10px 16px; border-radius: 12px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .toast.on { opacity: 1; }
+  .loading { position: fixed; inset: 0; display: grid; place-items: center; z-index: 60; background: var(--night); color: var(--muted); font: 500 15px var(--sans); transition: opacity .6s; }
+  .loading.done { opacity: 0; pointer-events: none; }
+  @media (min-width: 760px) { .sheet { padding-bottom: 24px; } }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="labels"></div>
+
+<div class="top">
+  <div class="count" id="count">Наш саф</div>
+  <div class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="Твой ник в TikTok" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+    <ul class="results" id="results"></ul>
+  </div>
+</div>
+
+<div class="intro" id="intro">
+  <h1>Мы не смогли уместить всех в одно видео</h1>
+  <p>Поэтому построили этот саф. Здесь стоят все, кто написал «Амин» и подписался: <b id="introN">…</b>. Найди себя: рядом тебя ждёт письмо.</p>
+  <button class="btn" id="findBtn">Найти себя</button>
+</div>
+<div class="hint" id="hint">Двигай пальцем, чтобы пройти вдоль рядов</div>
+
+<div class="sheet" id="sheet">
+  <article class="letter" id="letter"></article>
+</div>
+<div class="toast" id="toast"></div>
+<div class="loading" id="loading">Собираем саф…</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { MapControls } from 'three/addons/controls/MapControls.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+/* ================= настройки ================= */
+const ROW = 41, SX = 0.95, SZ = 2.3;               // мест в ряду, шаг по ряду и между рядами
+const KAABA_Z = -46;
+const PLAY = 'https://play.google.com/store/apps/details?id=com.way.quran_widget&referrer=utm_source%3Dtiktok%26utm_medium%3Dsaff';
+const APPSTORE = 'https://apps.apple.com/app/id6764872734?ct=saff';
+const AMP_KEY = '4b8a13fea0f3d4b8b1ebd118eaddaa4c';
+const ROBES = ['#EFE8DA', '#F4F0E6', '#E6DCC8', '#DCD3C0', '#F7F4EC', '#CFC6B2', '#E9E1CF', '#B9C7B3', '#C9B79A', '#8FA3A8'];
+const CAPS  = ['#FFFFFF', '#FFFFFF', '#F2EEE4', '#FFFFFF', '#2B2B2B', '#1F5A45', '#FFFFFF'];
+const RUGS  = ['#1F5A66', '#6A3A78', '#2F6A3E', '#7A5222', '#3A3E7A', '#7A2E2E', '#2E6A6A', '#6A5A2A'];
+const SKINS = ['#9C6E50', '#B5835F', '#8A5E43', '#C29270', '#7A5139'];
+
+/* ================= платформа ================= */
+const ua = navigator.userAgent || '';
+const platform = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'ios' : /Android/.test(ua) ? 'android' : 'desktop';
+document.documentElement.dataset.platform = platform;
+const webview = /musical_ly|BytedanceWebview|Bytedance|Instagram|FBAN|FBAV/i.test(ua) || (/iPhone|iPad|iPod/.test(ua) && !/Safari\//.test(ua));
+if (webview) document.documentElement.dataset.webview = '1';
+
+/* ================= аналитика (Amplitude, платформа Web) ================= */
+let deviceId = 'web-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+try { const s = localStorage.getItem('saff_did'); if (s) deviceId = s; else localStorage.setItem('saff_did', deviceId); } catch (e) {}
+function track(event_type, props = {}) {
+  if (!AMP_KEY || /^(127\.0\.0\.1|localhost)$/.test(location.hostname)) return;
+  try {
+    fetch('https://api2.amplitude.com/2/httpapi', {
+      method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: AMP_KEY, events: [{ device_id: deviceId, event_type, platform: 'Web', os_name: platform, event_properties: { ...props, webview } }] }),
+    }).catch(() => {});
+  } catch (e) {}
+}
+
+/* ================= данные ================= */
+const people = await fetch('people.json').then(r => r.json()); // [uniqueId, nickname, src]
+const N = people.length;
+const rowsTotal = Math.ceil(N / ROW);
+const fmt = (n) => n.toLocaleString('ru-RU');
+document.getElementById('count').textContent = `Наш саф · ${fmt(N)} человек`;
+document.getElementById('introN').textContent = `${fmt(N)} человек`;
+
+function placeOf(i) {
+  const row = Math.floor(i / ROW), col = i % ROW;
+  const inRow = row === rowsTotal - 1 ? N - row * ROW : ROW;
+  return { row, col, x: (col - (inRow - 1) / 2) * SX, z: row * SZ };
+}
+function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rnd(i, s) { const x = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return x - Math.floor(x); }
+
+/* ================= сцена ================= */
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight, false);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog('#E9A877', 70, 340);
+const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.5, 900);
+
+// небо: градиент заката, солнце низко над Каабой (Мекка к западу от нас, там закат)
+const SUN_DIR = new THREE.Vector3(-0.25, 0.07, -1).normalize();
+const sky = new THREE.Mesh(new THREE.SphereGeometry(600, 32, 16), new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, fog: false,
+  uniforms: { sun: { value: SUN_DIR } },
+  vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `varying vec3 vDir; uniform vec3 sun;
+    void main(){
+      float h = clamp(vDir.y, -0.1, 1.0);
+      vec3 horizon = vec3(0.98, 0.68, 0.42), mid = vec3(0.86, 0.48, 0.45), top = vec3(0.17, 0.16, 0.36);
+      vec3 c = mix(horizon, mid, smoothstep(0.0, 0.18, h));
+      c = mix(c, top, smoothstep(0.15, 0.75, h));
+      float s = max(dot(normalize(vDir), sun), 0.0);
+      c += vec3(1.0, 0.75, 0.45) * pow(s, 18.0) * 0.55 + vec3(1.0, 0.92, 0.75) * pow(s, 900.0) * 2.5;
+      gl_FragColor = vec4(c, 1.0);
+    }`,
+}));
+scene.add(sky);
+
+scene.add(new THREE.HemisphereLight('#FFD9B0', '#8A6A4A', 1.15));
+const sunLight = new THREE.DirectionalLight('#FFC58A', 2.1);
+sunLight.position.copy(SUN_DIR).multiplyScalar(100).add(new THREE.Vector3(30, 40, 0));
+scene.add(sunLight);
+const fill = new THREE.DirectionalLight('#B8C4FF', 0.55);
+fill.position.set(20, 30, 80);
+scene.add(fill);
+
+// земля: песок, мраморный двор под сафом и вокруг Каабы
+const sand = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600), new THREE.MeshStandardMaterial({ color: '#D7B07C', roughness: 1 }));
+sand.rotation.x = -Math.PI / 2; scene.add(sand);
+const saffDepth = rowsTotal * SZ;
+const marble = new THREE.Mesh(new THREE.PlaneGeometry(ROW * SX + 16, saffDepth + (-KAABA_Z) + 40), new THREE.MeshStandardMaterial({ color: '#F1EADB', roughness: 0.55 }));
+marble.rotation.x = -Math.PI / 2; marble.position.set(0, 0.04, (saffDepth + KAABA_Z) / 2 - 2); scene.add(marble);
+const court = new THREE.Mesh(new THREE.CircleGeometry(26, 64), new THREE.MeshStandardMaterial({ color: '#FAF6EE', roughness: 0.4 }));
+court.rotation.x = -Math.PI / 2; court.position.set(0, 0.08, KAABA_Z); scene.add(court);
+
+// Кааба
+const kaaba = new THREE.Group();
+const kBox = new THREE.Mesh(new THREE.BoxGeometry(7, 8, 6.4), new THREE.MeshStandardMaterial({ color: '#141414', roughness: 0.75 }));
+kBox.position.y = 4; kaaba.add(kBox);
+const goldMat = new THREE.MeshStandardMaterial({ color: '#D9AE4E', emissive: '#6A4A10', emissiveIntensity: 0.6, metalness: 0.6, roughness: 0.35 });
+const band = new THREE.Mesh(new THREE.BoxGeometry(7.06, 0.55, 6.46), goldMat); band.position.y = 5.6; kaaba.add(band);
+const door = new THREE.Mesh(new THREE.BoxGeometry(1.3, 2.6, 0.08), goldMat); door.position.set(1.6, 3.4, 3.22); kaaba.add(door);
+kaaba.position.z = KAABA_Z; scene.add(kaaba);
+
+// галерея и минареты вокруг
+const stone = new THREE.MeshStandardMaterial({ color: '#E4D6BC', roughness: 0.8 });
+for (let k = 0; k < 7; k++) {
+  const a = -Math.PI * 0.85 + k * (Math.PI * 1.7 / 6);
+  const r = 36;
+  const m = new THREE.Group();
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.9, 26, 10), stone); shaft.position.y = 13; m.add(shaft);
+  const balc = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.5, 10), stone); balc.position.y = 19; m.add(balc);
+  const top = new THREE.Mesh(new THREE.ConeGeometry(0.75, 4, 10), goldMat); top.position.y = 28; m.add(top);
+  m.position.set(Math.sin(a) * r, 0, KAABA_Z - Math.cos(a) * r);
+  if (m.position.z > KAABA_Z + 20) continue;
+  scene.add(m);
+}
+const arcade = new THREE.Mesh(new THREE.CylinderGeometry(40, 40, 7, 64, 1, true, Math.PI * 0.62, Math.PI * 0.76), new THREE.MeshStandardMaterial({ color: '#E8DCC4', roughness: 0.85, side: THREE.DoubleSide }));
+arcade.position.set(0, 3.5, KAABA_Z); scene.add(arcade);
+// часовая башня вдали
+const tower = new THREE.Group();
+const tBody = new THREE.Mesh(new THREE.BoxGeometry(14, 70, 14), new THREE.MeshStandardMaterial({ color: '#D9C9A8', roughness: 0.8 })); tBody.position.y = 35; tower.add(tBody);
+const clock = new THREE.Mesh(new THREE.CircleGeometry(4.5, 32), new THREE.MeshStandardMaterial({ color: '#F4F1E8', emissive: '#5FA36E', emissiveIntensity: 0.5 })); clock.position.set(0, 60, 7.05); tower.add(clock);
+const spire = new THREE.Mesh(new THREE.ConeGeometry(4, 26, 8), goldMat); spire.position.y = 83; tower.add(spire);
+tower.position.set(-20, 0, KAABA_Z - 120); scene.add(tower);
+// горы Хиджаза кольцом
+const rockMat = new THREE.MeshStandardMaterial({ color: '#9A6E4C', roughness: 1, flatShading: true });
+for (let k = 0; k < 26; k++) {
+  const a = (k / 26) * Math.PI * 2, r = 230 + rnd(k, 1) * 80, h = 30 + rnd(k, 2) * 50;
+  const m = new THREE.Mesh(new THREE.ConeGeometry(40 + rnd(k, 3) * 30, h, 6), rockMat);
+  m.position.set(Math.sin(a) * r, h / 2 - 2, KAABA_Z + Math.cos(a) * r); m.rotation.y = rnd(k, 4) * 3;
+  scene.add(m);
+}
+
+/* ================= люди (instanced) ================= */
+function cloth(rTop, rBot, h, folds = 9, amp = 0.04, seg = 18) {
+  const g = new THREE.CylinderGeometry(rTop, rBot, h, seg, 3, false);
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i), r = Math.hypot(x, z);
+    if (r < 1e-4) continue;
+    const th = Math.atan2(z, x), low = 0.35 + 0.65 * (0.5 - y / h);
+    const k = 1 + amp * low * (Math.sin(folds * th) + 0.4 * Math.sin(folds * 2.3 * th + 1.3));
+    p.setX(i, x * k); p.setZ(i, z * k);
+  }
+  return g;
+}
+const at = (g, x, y, z, rx = 0, rz = 0, s = null) => { if (s) g.scale(...s); if (rx) g.rotateX(rx); if (rz) g.rotateZ(rz); g.translate(x, y, z); return g; };
+const strip = (g) => { g.deleteAttribute('uv'); return g.index ? g.toNonIndexed() : g; };
+// одежда: подол, корпус, плечи, руки сложены спереди (со спины видны локти)
+const robeGeo = mergeGeometries([
+  at(cloth(0.235, 0.33, 0.92), 0, 0.51, 0),
+  at(cloth(0.21, 0.245, 0.5, 7, 0.03, 14), 0, 1.2, 0),
+  at(new THREE.SphereGeometry(0.28, 14, 8), 0, 1.44, 0, 0, 0, [1.05, 0.42, 0.68]),
+  at(new THREE.CylinderGeometry(0.068, 0.074, 0.32, 8), -0.26, 1.28, 0.02, -0.3, -0.12),
+  at(new THREE.CylinderGeometry(0.068, 0.074, 0.32, 8), 0.26, 1.28, 0.02, -0.3, 0.12),
+  at(new THREE.CylinderGeometry(0.075, 0.09, 0.3, 8), -0.17, 1.12, -0.16, -1.6, 0.9),
+  at(new THREE.CylinderGeometry(0.075, 0.09, 0.3, 8), 0.17, 1.12, -0.16, -1.6, -0.9),
+].map(strip));
+const skinGeo = mergeGeometries([
+  at(new THREE.SphereGeometry(0.125, 14, 10), 0, 1.69, 0.01, 0, 0, [0.95, 1.05, 1]),
+  at(new THREE.CylinderGeometry(0.055, 0.065, 0.1, 8), 0, 1.57, 0),
+  at(new THREE.BoxGeometry(0.08, 0.05, 0.22), -0.09, 0.03, -0.1),
+  at(new THREE.BoxGeometry(0.08, 0.05, 0.22), 0.09, 0.03, -0.1),
+].map(strip));
+const capGeo = new THREE.SphereGeometry(0.13, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2.1); capGeo.translate(0, 1.72, 0.01);
+const rugGeo = new THREE.BoxGeometry(0.82, 0.025, 1.75); rugGeo.translate(0, 0.07, -0.55);
+const shadowGeo = new THREE.CircleGeometry(0.38, 16); shadowGeo.rotateX(-Math.PI / 2); shadowGeo.translate(0, 0.1, 0.02);
+
+const mats = {
+  robe: new THREE.MeshStandardMaterial({ roughness: 0.8 }),
+  skin: new THREE.MeshStandardMaterial({ roughness: 0.7 }),
+  cap:  new THREE.MeshStandardMaterial({ roughness: 0.7 }),
+  rug:  new THREE.MeshStandardMaterial({ roughness: 0.95 }),
+  shadow: new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.18, depthWrite: false }),
+};
+const inst = {
+  robe: new THREE.InstancedMesh(robeGeo, mats.robe, N),
+  skin: new THREE.InstancedMesh(skinGeo, mats.skin, N),
+  cap:  new THREE.InstancedMesh(capGeo, mats.cap, N),
+  rug:  new THREE.InstancedMesh(rugGeo, mats.rug, N),
+  shadow: new THREE.InstancedMesh(shadowGeo, mats.shadow, N),
+};
+const pos = new Float32Array(N * 3);
+const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), v3 = new THREE.Vector3(), col = new THREE.Color();
+for (let i = 0; i < N; i++) {
+  const p = placeOf(i);
+  const s = 0.94 + rnd(i, 7) * 0.12;
+  const jx = (rnd(i, 8) - 0.5) * 0.04;
+  pos[i * 3] = p.x + jx; pos[i * 3 + 1] = 0; pos[i * 3 + 2] = p.z;
+  q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), (rnd(i, 9) - 0.5) * 0.08);
+  m4.compose(v3.set(p.x + jx, 0, p.z), q, sc.set(s, s, s));
+  inst.robe.setMatrixAt(i, m4); inst.skin.setMatrixAt(i, m4); inst.cap.setMatrixAt(i, m4); inst.shadow.setMatrixAt(i, m4);
+  m4.compose(v3.set(p.x, 0, p.z), new THREE.Quaternion(), sc.set(1, 1, 1));
+  inst.rug.setMatrixAt(i, m4);
+  inst.robe.setColorAt(i, col.set(ROBES[Math.floor(rnd(i, 1) * ROBES.length)]));
+  inst.skin.setColorAt(i, col.set(SKINS[Math.floor(rnd(i, 2) * SKINS.length)]));
+  inst.cap.setColorAt(i, col.set(CAPS[Math.floor(rnd(i, 3) * CAPS.length)]));
+  inst.rug.setColorAt(i, col.set(RUGS[(p.row + Math.floor(rnd(i, 4) * 2)) % RUGS.length]));
+}
+for (const k in inst) { inst[k].instanceMatrix.needsUpdate = true; if (inst[k].instanceColor) inst[k].instanceColor.needsUpdate = true; inst[k].frustumCulled = false; scene.add(inst[k]); }
+
+// подсветка найденного: золотой силуэт, луч света, кольцо
+const glowMat = new THREE.MeshStandardMaterial({ color: '#F3D48A', emissive: '#E9C46A', emissiveIntensity: 1.2, transparent: true, opacity: 0.0, depthWrite: false });
+const ghost = new THREE.Group();
+ghost.add(new THREE.Mesh(robeGeo, glowMat), new THREE.Mesh(skinGeo, glowMat), new THREE.Mesh(capGeo, glowMat));
+ghost.scale.setScalar(1.04); ghost.visible = false; scene.add(ghost);
+const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.42, 30, 24, 1, true), new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false,
+  uniforms: { o: { value: 0 } },
+  vertexShader: `varying float vy; void main(){ vy = uv.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `varying float vy; uniform float o; void main(){ gl_FragColor = vec4(1.0, 0.82, 0.45, pow(1.0 - vy, 1.6) * 0.28 * o); }`,
+}));
+beam.position.y = 15; beam.visible = false; scene.add(beam);
+const ring = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.62, 48), new THREE.MeshBasicMaterial({ color: '#F3D48A', transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+ring.rotation.x = -Math.PI / 2; ring.position.y = 0.12; ring.visible = false; scene.add(ring);
+
+/* ================= камера и управление ================= */
+const controls = new MapControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.screenSpacePanning = false;
+controls.minDistance = 2.2; controls.maxDistance = 140;
+controls.maxPolarAngle = 1.38; controls.minPolarAngle = 0.15;
+controls.zoomToCursor = false;
+const minZ = KAABA_Z - 10, maxZ = saffDepth + 25, maxX = ROW * SX / 2 + 20;
+controls.addEventListener('change', () => {
+  const t = controls.target;
+  const cx = THREE.MathUtils.clamp(t.x, -maxX, maxX), cz = THREE.MathUtils.clamp(t.z, minZ, maxZ);
+  if (cx !== t.x || cz !== t.z) { const dx = cx - t.x, dz = cz - t.z; t.x = cx; t.z = cz; camera.position.x += dx; camera.position.z += dz; }
+  t.y = THREE.MathUtils.clamp(t.y, 0, 4);
+});
+const OVERVIEW = { pos: new THREE.Vector3(-22, 34, saffDepth + 46), look: new THREE.Vector3(0, 0, saffDepth * 0.35) };
+camera.position.set(0, 110, saffDepth + 160);
+controls.target.set(0, 0, KAABA_Z);
+controls.update();
+
+let fly = null; // {p0,p1,t0,t1,dur,start}
+const easeIO = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+function flyTo(p1, t1, dur = 2.2, arc = 0, onDone = null) {
+  fly = { p0: camera.position.clone(), t0: controls.target.clone(), p1, t1, dur, arc, start: performance.now(), onDone };
+  controls.enabled = false;
+}
+
+/* ================= плашки ================= */
+const labelsEl = document.getElementById('labels');
+const POOL = 48;
+const tags = Array.from({ length: POOL }, () => { const d = document.createElement('div'); d.className = 'tag'; labelsEl.appendChild(d); return d; });
+const meTag = document.createElement('div'); meTag.className = 'tag me'; labelsEl.appendChild(meTag);
+const handle = (p) => p[0] ? '@' + p[0] : p[1];
+let found = -1;
+const proj = new THREE.Vector3();
+function updateLabels() {
+  const W = innerWidth, H = innerHeight;
+  const t = controls.target;
+  const dist = camera.position.distanceTo(t);
+  let used = 0;
+  if (dist < 34) {
+    const rowC = Math.round(t.z / SZ), span = dist < 14 ? 5 : 8;
+    const cand = [];
+    for (let r = Math.max(0, rowC - span); r <= Math.min(rowsTotal - 1, rowC + span); r++) {
+      for (let c = 0; c < ROW; c++) {
+        const i = r * ROW + c; if (i >= N || i === found) continue;
+        const dx = pos[i * 3] - camera.position.x, dz = pos[i * 3 + 2] - camera.position.z;
+        cand.push([dx * dx + dz * dz + (pos[i*3+1]), i]);
+      }
+    }
+    cand.sort((a, b) => a[0] - b[0]);
+    const maxD2 = (dist < 14 ? 15 : 26) ** 2;
+    const boxes = [];
+    for (const [d2, i] of cand) {
+      if (used >= POOL || d2 > maxD2) break;
+      proj.set(pos[i * 3], 2.02, pos[i * 3 + 2]).project(camera);
+      if (proj.z > 1 || proj.x < -1.1 || proj.x > 1.1 || proj.y < -1.1 || proj.y > 1.1) continue;
+      const sx = (proj.x + 1) / 2 * W, sy = (1 - proj.y) / 2 * H;
+      const scale = THREE.MathUtils.clamp(9 / Math.sqrt(d2), 0.55, 1.15);
+      const w = 70 * scale, h = 22 * scale;
+      if (boxes.some(b => Math.abs(b[0] - sx) < (b[2] + w) / 2 && Math.abs(b[1] - sy) < (b[3] + h) / 2)) continue;
+      boxes.push([sx, sy, w, h]);
+      const el = tags[used++];
+      const txt = handle(people[i]);
+      if (el.textContent !== txt) el.textContent = txt;
+      el.style.display = 'block';
+      el.style.transform = `translate(-50%, -100%) translate(${sx}px, ${sy}px) scale(${scale})`;
+      el.style.opacity = String(THREE.MathUtils.clamp(1.4 - Math.sqrt(d2) / (Math.sqrt(maxD2)), 0.35, 1));
+    }
+  }
+  for (let k = used; k < POOL; k++) tags[k].style.display = 'none';
+  if (found >= 0) {
+    proj.set(pos[found * 3], 2.15, pos[found * 3 + 2]).project(camera);
+    if (proj.z < 1) {
+      meTag.style.display = 'block';
+      meTag.style.transform = `translate(-50%, -100%) translate(${(proj.x + 1) / 2 * W}px, ${(1 - proj.y) / 2 * H}px)`;
+    } else meTag.style.display = 'none';
+  } else meTag.style.display = 'none';
+}
+
+/* ================= письмо ================= */
+const THANKS_C = [
+  'Твоё «Амин» под роликом мы прочитали. Спасибо, что ты встаёшь рядом с нами.',
+  'Мы начинали вчетвером. Сегодня нас уже {N}, и среди них ты. Спасибо, что откликаешься.',
+  'Саф держится плечом к плечу. Спасибо, что твоё плечо рядом с нашим.',
+  'Каждый, кто пишет «Амин», делает этот путь короче для всех. Спасибо, что ты один из нас.',
+];
+const THANKS_F = [
+  'Каждый новый человек в ряду приближает нас к Каабе. Спасибо, что ты с нами в этом пути.',
+  'Мы начинали вчетвером. Сегодня нас уже {N}, и среди них ты. Спасибо, что ты рядом.',
+  'Саф держится плечом к плечу. Спасибо, что твоё плечо рядом с нашим.',
+  'Без тебя этот ряд был бы короче. Спасибо, что ты идёшь вместе с нами.',
+];
+const WISHES = [
+  'Пусть Аллах дарует тебе благо этого мира и благо мира вечного.',
+  'Пусть однажды ты встанешь в саф у Каабы не на экране, а наяву.',
+  'Пусть дорога в Мекку откроется тебе легко, а домой ты вернёшься с принятой умрой.',
+  'Пусть каждый твой намаз будет принят.',
+  'Пусть твои дуа будут услышаны, даже те, что ты произносишь шёпотом.',
+  'Пусть в твоём доме будут покой, достаток и тепло близких.',
+  'Пусть Аллах убережёт тебя и твоих родных от всякого зла.',
+  'Пусть сердце находит покой в поминании Аллаха.',
+  'Пусть Аллах облегчит то, что сейчас кажется тебе трудным.',
+  'Пусть твои близкие будут рядом и здоровы.',
+  'Пусть каждое утро начинается с аята, а каждый вечер с благодарности.',
+  'Пусть твой путь будет прямым, а шаги по нему лёгкими.',
+];
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function letterHTML(i) {
+  const [u, n, src] = people[i];
+  const p = placeOf(i);
+  const h = hash(u || n);
+  const name = (n && n.trim() && n.trim() !== '.') ? n.trim() : (u ? '@' + u : 'друг');
+  const thanks = (src === 'c' ? THANKS_C : THANKS_F)[h % 4].replace('{N}', fmt(N));
+  // первое пожелание всегда о Мекке или о двух мирах, остальные по хэшу без повторов
+  const first = h % 2 === 0 ? 0 : 1;
+  const pool = WISHES.map((_, k) => k).filter(k => k !== first && !(first === 1 && k === 2));
+  const picks = [first];
+  let x = h;
+  while (picks.length < 4) { x = Math.imul(x ^ (x >>> 15), 2246822507) >>> 0; const k = pool[x % pool.length]; if (!picks.includes(k)) picks.push(k); }
+  return `
+    <button class="close" id="closeLetter" aria-label="Закрыть">×</button>
+    <div class="meta">Письмо № ${fmt(i + 1)} из ${fmt(N)}</div>
+    <h2>Ассаляму алейкум, ${esc(name)}!</h2>
+    <p class="place">Твоё место в сафе: ряд ${p.row + 1}, место ${p.col + 1}${u ? ` · @${esc(u)}` : ''}</p>
+    <p class="body">${esc(thanks)}</p>
+    <p class="body">Мы желаем тебе:</p>
+    <ul class="wishes">${picks.map(k => `<li>${esc(WISHES[k])}</li>`).join('')}</ul>
+    <div class="amin">Амин.</div>
+    <p class="sign">С теплом, команда Quran Widget<br>5 ноября 2026</p>
+    <div class="keep">
+      <h3>Пусть письмо будет перед глазами</h3>
+      <p>Поставь Quran Widget: аят дня и время намаза будут прямо на главном экране телефона. Бесплатно.</p>
+      <div class="stores">
+        <a class="store store--android" href="${PLAY}" data-store="play" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.6 2.3 13.5 12l-9.9 9.7c-.4-.2-.6-.6-.6-1.1V3.4c0-.5.2-.9.6-1.1Zm11.1 10.9 2.5 2.5-11.8 6.7 9.3-9.2Zm3.6-3.4 2.9 1.6c.9.5.9 1.8 0 2.3l-2.9 1.6-2.7-2.7 2.7-2.8ZM5.4 1.6l11.8 6.7-2.5 2.5-9.3-9.2Z"/></svg>
+          Google Play</a>
+        <a class="store store--ios" href="${APPSTORE}" data-store="appstore" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.8 1.2 1.8 2.6 3.1 2.5 1.2 0 1.7-.8 3.2-.8s1.9.8 3.2.8c1.3 0 2.2-1.2 3-2.5 1-1.4 1.3-2.7 1.4-2.8-.1 0-2.6-1-2.6-4.1ZM13.9 5c.7-.8 1.1-1.9 1-3-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.8-1 2.9 1.1.1 2.2-.6 2.9-1.4Z"/></svg>
+          App Store</a>
+      </div>
+      <div class="gate">Внутри TikTok App Store не открывается. Нажми <b>⋯</b> в правом верхнем углу → <b>«Открыть в браузере»</b>, а там кнопку App Store. Или найди в App Store «Quran Widget».</div>
+      <div class="row2">
+        <button class="soft" id="shareBtn">Поделиться</button>
+        <button class="soft" id="lookBtn">Посмотреть вокруг</button>
+      </div>
+    </div>
+    <p class="fine">Не хочешь быть в сафе? Напиши нам в TikTok @quran.widget.app, уберём.</p>`;
+}
+const sheet = document.getElementById('sheet'), letter = document.getElementById('letter');
+function openLetter(i) {
+  letter.innerHTML = letterHTML(i);
+  sheet.scrollTop = 0;
+  sheet.classList.add('on');
+  track('saff_letter_open', { src: people[i][2], row: placeOf(i).row + 1 });
+  document.getElementById('closeLetter').onclick = closeLetter;
+  document.getElementById('lookBtn').onclick = closeLetter;
+  document.getElementById('shareBtn').onclick = () => share(i);
+  letter.querySelectorAll('[data-store]').forEach(a => a.addEventListener('click', () => track('saff_store_tap', { store: a.dataset.store })));
+}
+function closeLetter() { sheet.classList.remove('on'); controls.enabled = true; }
+const toastEl = document.getElementById('toast');
+function toast(t) { toastEl.textContent = t; toastEl.classList.add('on'); setTimeout(() => toastEl.classList.remove('on'), 2200); }
+async function share(i) {
+  const u = people[i][0] || people[i][1];
+  const url = location.origin + location.pathname + '?n=' + encodeURIComponent(u);
+  const text = 'Я стою в сафе на пути к Каабе. Найди и себя:';
+  track('saff_share', {});
+  try {
+    if (navigator.share) { await navigator.share({ title: 'Наш саф', text, url }); return; }
+  } catch (e) { return; }
+  try { await navigator.clipboard.writeText(text + ' ' + url); toast('Ссылка скопирована'); } catch (e) { toast(url); }
+}
+
+/* ================= поиск ================= */
+const norm = (s) => (s || '').toLowerCase().replace(/^@+/, '').replace(/\s+/g, ' ').trim();
+const index = people.map((p, i) => [norm(p[0]), norm(p[1]), i]);
+const qEl = document.getElementById('q'), resEl = document.getElementById('results');
+let lastQ = '', searchTimer = null;
+function search(q) {
+  q = norm(q);
+  if (!q) return [];
+  const exact = [], starts = [], has = [];
+  for (const [u, n, i] of index) {
+    if (u === q || n === q) exact.push(i);
+    else if (u.startsWith(q) || n.startsWith(q)) starts.push(i);
+    else if (q.length >= 3 && (u.includes(q) || n.includes(q))) has.push(i);
+  }
+  return [...exact, ...starts, ...has].slice(0, 8);
+}
+function renderResults(q) {
+  const list = search(q);
+  if (!norm(q)) { resEl.classList.remove('on'); return; }
+  resEl.innerHTML = list.length
+    ? list.map((i, k) => `<li data-i="${i}" class="${k === 0 ? 'sel' : ''}"><span class="u">${esc(handle(people[i]))}</span>${people[i][1] && people[i][0] ? `<span class="n">${esc(people[i][1])}</span>` : ''}</li>`).join('')
+    : `<li class="none">Пока не нашли тебя. Напиши «Иду» под последним роликом @quran.widget.app — добавим в следующий раз.</li>`;
+  resEl.classList.add('on');
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { if (norm(q) !== lastQ) { lastQ = norm(q); track('saff_search', { len: lastQ.length, found: list.length > 0 }); } }, 900);
+}
+qEl.addEventListener('input', () => renderResults(qEl.value));
+qEl.addEventListener('focus', () => { hideIntro(); if (qEl.value) renderResults(qEl.value); });
+qEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { const li = resEl.querySelector('li[data-i]'); if (li) pick(+li.dataset.i); }
+});
+resEl.addEventListener('click', (e) => { const li = e.target.closest('li[data-i]'); if (li) pick(+li.dataset.i); });
+document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.search')) resEl.classList.remove('on'); });
+
+let pulseStart = 0;
+function pick(i, fromLink = false) {
+  resEl.classList.remove('on'); qEl.blur();
+  qEl.value = handle(people[i]);
+  sheet.classList.remove('on');
+  found = i;
+  meTag.textContent = handle(people[i]);
+  const x = pos[i * 3], z = pos[i * 3 + 2];
+  ghost.position.set(x, 0, z); beam.position.set(x, 15, z); ring.position.set(x, 0.12, z);
+  ghost.visible = beam.visible = ring.visible = true; pulseStart = performance.now();
+  track('saff_found', { src: people[i][2], via: fromLink ? 'link' : 'search' });
+  const cam = new THREE.Vector3(x - 1.5, 2.7, z + 4.3);
+  flyTo(cam, new THREE.Vector3(x, 1.3, z), fromLink ? 3.2 : 2.4, 9, () => setTimeout(() => openLetter(i), 650));
+}
+
+/* ================= вступление ================= */
+const intro = document.getElementById('intro'), hint = document.getElementById('hint');
+let introHidden = false;
+function hideIntro() { if (introHidden) return; introHidden = true; intro.classList.add('hide'); setTimeout(() => { hint.classList.add('on'); setTimeout(() => hint.classList.remove('on'), 4000); }, 600); }
+document.getElementById('findBtn').onclick = () => { hideIntro(); qEl.focus(); };
+canvas.addEventListener('pointerdown', () => { if (!fly) hideIntro(); });
+
+/* ================= цикл ================= */
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight, false); });
+let frame = 0;
+function tick(now) {
+  if (fly) {
+    const k = Math.min(1, (now - fly.start) / (fly.dur * 1000)), e = easeIO(k);
+    camera.position.lerpVectors(fly.p0, fly.p1, e);
+    camera.position.y += Math.sin(Math.PI * e) * fly.arc;
+    controls.target.lerpVectors(fly.t0, fly.t1, e);
+    camera.lookAt(controls.target);
+    if (k >= 1) { const cb = fly.onDone; fly = null; controls.enabled = true; controls.update(); cb && cb(); }
+  } else controls.update();
+  if (found >= 0) {
+    const t = (now - pulseStart) / 1000;
+    const o = Math.min(1, t / 0.8);
+    glowMat.opacity = o * (0.35 + 0.15 * Math.sin(t * 3));
+    beam.material.uniforms.o.value = o;
+    ring.material.opacity = o * (0.9 - (t % 1.6) / 1.6 * 0.9);
+    ring.scale.setScalar(1 + (t % 1.6) * 0.9);
+  }
+  if ((frame++ & 1) === 0 || fly) updateLabels();
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+document.getElementById('loading').classList.add('done');
+track('saff_open', { ref: document.referrer ? new URL(document.referrer).hostname : '', link: !!new URLSearchParams(location.search).get('n') });
+
+// открытие: облёт от Каабы к сафу, или сразу к человеку по ссылке ?n=
+const linkN = norm(new URLSearchParams(location.search).get('n') || '');
+const linked = linkN ? index.find(([u, n]) => u === linkN || n === linkN) : null;
+if (linked) { hideIntro(); setTimeout(() => pick(linked[2], true), 300); }
+else flyTo(OVERVIEW.pos.clone(), OVERVIEW.look.clone(), 4.5, 0);
+</script>
+</body>
+</html>
