@@ -201,8 +201,8 @@
   .ad-cap { font: 700 23px/1.2 var(--serif); text-align: center; color: var(--ink); margin: 16px 0 12px; min-height: 2.4em; max-width: 380px; transition: opacity .35s; }
   .ad-stage { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; display: grid; place-items: center; }
   .ad-phone { position: relative; height: 100%; max-height: 520px; aspect-ratio: 576 / 1150; border-radius: 26px; overflow: hidden; border: 3px solid rgba(255,255,255,.16); box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 50px rgba(233,196,106,.15); background: #000; }
-  .ad-phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .5s, transform 2.4s ease-out; transform: scale(1.06); }
-  .ad-phone img.on { opacity: 1; transform: scale(1); }
+  .ad-phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0; transition: opacity .5s, transform .9s cubic-bezier(.3,.7,.2,1), transform-origin .9s cubic-bezier(.3,.7,.2,1); }
+  .ad-phone img.on { opacity: 1; }
   .ad-brand { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; background: linear-gradient(180deg, #13261C, #0C1712); opacity: 0; transition: opacity .5s; text-align: center; padding: 16px; }
   .ad-brand.on { opacity: 1; }
   .ad-brand img { position: static; opacity: 1; transform: none; width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 8px 30px rgba(233,196,106,.3); }
@@ -887,11 +887,21 @@ function jnAsk(k) {
 document.getElementById('jnClose').onclick = () => jn.classList.remove('on');
 jn.addEventListener('click', (e) => { if (e.target === jn) jn.classList.remove('on'); });
 
-const AD_CAP = {
-  daily: ['Аят дня — прямо на экране блокировки', 'Кибла, имена Аллаха и аят — на главном экране'],
-  some: ['Один аят в день — без усилий, прямо на экране', 'Кибла, имена Аллаха и аят — на главном экране'],
-  start: ['Начни с одного аята в день — он уже на экране', 'Кибла, имена Аллаха и аят — на главном экране'],
+// 10 секунд по кругу: 5 кадров по 2 с. Кнопка «Встать в саф» включается через AD_WAIT секунд, ролик крутится дальше.
+const AD_LOOP = 10, AD_WAIT = 6;
+const AD_FIRST = {
+  daily: 'Аят дня — прямо на экране блокировки',
+  some: 'Один аят в день — без усилий, прямо на экране',
+  start: 'Начни с одного аята в день — он уже на экране',
 };
+// img: 0 — экран блокировки, 1 — главный экран, 2 — заставка; z: [масштаб, origin-x %, origin-y %]
+const AD_SLIDES = [
+  { img: 0, z: [1, 50, 50] },
+  { img: 1, z: [1, 50, 50], cap: 'Виджеты Корана — на главном экране' },
+  { img: 1, z: [2.3, 4, 2], cap: 'Кибла — где бы ты ни был' },
+  { img: 1, z: [2.3, 96, 2], cap: 'Имя Аллаха — новое каждый день' },
+  { img: 2, cap: 'Пусть Коран будет рядом каждый день' },
+];
 let adT0 = 0, adRaf = 0;
 ad.querySelectorAll('[data-adstore]').forEach(a => {
   a.href = a.dataset.adstore === 'play' ? PLAY.replace('saff', 'saff_ad') : APPSTORE + '_ad';
@@ -902,20 +912,25 @@ const adGo = document.getElementById('adGo');
 function openAd() {
   ad.classList.add('on'); adT0 = clock(); adGo.disabled = true;
   track('saff_join_ad', { quran: J.quran });
-  const caps = AD_CAP[J.quran] || AD_CAP.daily;
-  const A = document.getElementById('adA'), B = document.getElementById('adB'), C = document.getElementById('adC'), cap = document.getElementById('adCap');
-  let shown = -1;
+  const imgs = [document.getElementById('adA'), document.getElementById('adB'), document.getElementById('adC')], cap = document.getElementById('adCap');
+  let shown = -1, ready = false;
   const step = () => {
-    const t = (clock() - adT0) / 1000, k = t < 2.2 ? 0 : t < 4.2 ? 1 : 2;
+    if (!ad.classList.contains('on')) return;
+    const t = (clock() - adT0) / 1000, k = Math.floor((t % AD_LOOP) / (AD_LOOP / AD_SLIDES.length)), sl = AD_SLIDES[k];
     if (k !== shown) {
-      shown = k; A.classList.toggle('on', k === 0); B.classList.toggle('on', k === 1); C.classList.toggle('on', k === 2);
-      cap.style.opacity = 0; setTimeout(() => { cap.textContent = k < 2 ? caps[k] : 'Пусть Коран будет рядом каждый день'; cap.style.opacity = 1; }, REC ? 0 : 180);
+      shown = k;
+      imgs.forEach((el, j) => el.classList.toggle('on', j === sl.img));
+      if (sl.z) { const [z, ox, oy] = sl.z; imgs[sl.img].style.transformOrigin = `${ox}% ${oy}%`; imgs[sl.img].style.transform = `scale(${z})`; }
+      const text = sl.cap || AD_FIRST[J.quran] || AD_FIRST.daily;
+      if (cap.textContent !== text) { cap.style.opacity = 0; setTimeout(() => { cap.textContent = text; cap.style.opacity = 1; }, REC ? 0 : 180); }
     }
-    const left = Math.max(0, Math.ceil(6 - t));
-    document.getElementById('adBar').style.width = Math.min(100, t / 6 * 100) + '%';
-    document.getElementById('adSec').textContent = left ? left : '✓';
-    if (t >= 6) { adGo.disabled = false; adGo.textContent = 'Встать в саф'; document.getElementById('adLbl').textContent = 'Твоё место готово'; return; }
-    adGo.textContent = 'Встать в саф · ' + left;
+    if (!ready) {
+      const left = Math.max(0, Math.ceil(AD_WAIT - t));
+      document.getElementById('adBar').style.width = Math.min(100, t / AD_WAIT * 100) + '%';
+      document.getElementById('adSec').textContent = left ? left : '✓';
+      adGo.textContent = 'Встать в саф · ' + left;
+      if (t >= AD_WAIT) { ready = true; adGo.disabled = false; adGo.textContent = 'Встать в саф'; document.getElementById('adLbl').textContent = 'Твоё место готово'; }
+    }
     if (!REC) adRaf = requestAnimationFrame(step);
   };
   window.__adStep = step;
