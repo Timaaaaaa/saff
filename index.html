@@ -167,6 +167,53 @@
     .wishes li { padding: 6px 0 6px 24px; }
     .amin { font-size: 18px; }
   }
+
+  /* ---------- добавить себя ---------- */
+  .intro .btn.ghost { margin-top: 8px; }
+  .results .none .btn { margin-top: 10px; height: 44px; font-size: 15px; }
+  .jn { position: fixed; inset: 0; z-index: 42; display: none; align-items: flex-end; justify-content: center; background: rgba(10,8,20,.6); padding: 0 12px max(12px, env(safe-area-inset-bottom)); }
+  .jn.on { display: flex; }
+  .jn-card { width: 100%; max-width: 480px; background: var(--paper); color: var(--paper-ink); border-radius: 20px; padding: 20px 20px 18px; position: relative; border: 1px solid #E8D9B8; }
+  .jn-dots { display: flex; gap: 6px; margin: 0 0 14px; }
+  .jn-dots i { width: 22px; height: 4px; border-radius: 2px; background: rgba(42,34,22,.14); }
+  .jn-dots i.on { background: var(--gold-deep); }
+  .jn-card h3 { font: 700 22px/1.25 var(--serif); margin: 0 0 6px; padding-right: 34px; }
+  .jn-card p { font: 400 14px/1.45 var(--sans); color: var(--paper-muted); margin: 0 0 14px; }
+  .jn-net { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; padding: 4px; border-radius: 12px; background: rgba(42,34,22,.06); }
+  .jn-net button { height: 38px; border: 0; border-radius: 9px; background: transparent; font: 600 14px var(--sans); color: var(--paper-muted); cursor: pointer; }
+  .jn-net button.on { background: #fff; color: var(--paper-ink); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+  .jn-in { position: relative; margin-bottom: 8px; }
+  .jn-in span { position: absolute; left: 14px; top: 14px; font: 600 17px var(--sans); color: var(--paper-muted); }
+  .jn-in input { width: 100%; height: 50px; border-radius: 12px; border: 1.5px solid #D9C08A; background: #fff; font: 500 17px var(--sans); color: var(--paper-ink); padding: 0 14px 0 32px; outline: none; }
+  .jn-in input:focus { border-color: var(--gold-deep); }
+  .jn-err { min-height: 18px; font: 500 13px/1.4 var(--sans); color: #A4372A; margin: 0 0 8px; }
+  .jn-chips { display: grid; gap: 8px; }
+  .jn-chips button { min-height: 50px; text-align: left; padding: 0 16px; border-radius: 12px; border: 1px solid #E3D2AC; background: #fff; font: 600 15.5px var(--sans); color: var(--paper-ink); cursor: pointer; }
+  .jn-chips button:active { background: #FFF4D6; }
+  .jn-fine { font: 400 12px/1.4 var(--sans); color: var(--paper-muted); margin: 12px 0 0; text-align: center; }
+  /* 6 секунд о приложении, пока ставим в саф */
+  .ad { position: fixed; inset: 0; z-index: 44; display: none; flex-direction: column; align-items: center; background: radial-gradient(120% 70% at 50% 0%, #2A2050 0%, var(--night) 60%); padding: max(14px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom)); }
+  .ad.on { display: flex; }
+  .ad-top { width: 100%; max-width: 440px; }
+  .ad-lbl { display: flex; justify-content: space-between; font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+  .ad-bar { height: 3px; border-radius: 2px; background: rgba(255,255,255,.14); overflow: hidden; }
+  .ad-bar i { display: block; height: 100%; width: 0; background: var(--gold); }
+  .ad-cap { font: 700 23px/1.2 var(--serif); text-align: center; color: var(--ink); margin: 16px 0 12px; min-height: 2.4em; max-width: 380px; transition: opacity .35s; }
+  .ad-stage { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; display: grid; place-items: center; }
+  .ad-phone { position: relative; height: 100%; max-height: 520px; aspect-ratio: 576 / 1150; border-radius: 26px; overflow: hidden; border: 3px solid rgba(255,255,255,.16); box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 50px rgba(233,196,106,.15); background: #000; }
+  .ad-phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .5s, transform 2.4s ease-out; transform: scale(1.06); }
+  .ad-phone img.on { opacity: 1; transform: scale(1); }
+  .ad-brand { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; background: linear-gradient(180deg, #13261C, #0C1712); opacity: 0; transition: opacity .5s; text-align: center; padding: 16px; }
+  .ad-brand.on { opacity: 1; }
+  .ad-brand img { position: static; opacity: 1; transform: none; width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 8px 30px rgba(233,196,106,.3); }
+  .ad-brand b { font: 700 22px/1.2 var(--sans); color: #fff; }
+  .ad-brand span { font: 500 14px/1.4 var(--sans); color: #CFE3D6; }
+  .ad-bot { width: 100%; max-width: 440px; display: grid; gap: 8px; margin-top: 14px; }
+  .ad-bot .row2 { margin-top: 0; }
+  .ad .store { height: 46px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); font-size: 14px; }
+  .ad .btn[disabled] { opacity: .55; cursor: default; }
+  .ad .gate { margin-top: 0; }
+  @media (max-height: 640px) { .ad-cap { font-size: 19px; margin: 10px 0 8px; } .ad .store { height: 42px; } }
 </style>
 </head>
 <body>
@@ -186,6 +233,7 @@
   <h1>Мы не смогли уместить всех в одно видео</h1>
   <p>Поэтому построили двор вокруг Каабы. Здесь все, кто написал «Амин» и подписался, — <b id="introN">…</b> — вместе совершают таваф. Найди себя: тебя ждёт письмо.</p>
   <button class="btn" id="findBtn">Найти себя</button>
+  <button class="btn ghost" id="joinBtn">Меня тут нет — добавить себя</button>
 </div>
 <div class="hint" id="hint">Двигай пальцем, чтобы пройти по двору</div>
 
@@ -198,6 +246,35 @@
     <h3>Поддержать авторов</h3>
     <p>Всё здесь бесплатно, и твоё письмо остаётся твоим в любом случае. Этот двор, ролики и письма мы делаем сами, без рекламы. Если хочешь, чтобы выходили новые выпуски, можешь отправить любую сумму. Только по желанию.</p>
     <div id="dnLinks"></div>
+  </div>
+</div>
+<div class="jn" id="jn">
+  <div class="jn-card">
+    <button class="close" id="jnClose" aria-label="Закрыть">×</button>
+    <div class="jn-dots"><i></i><i></i><i></i></div>
+    <div id="jnBody"></div>
+  </div>
+</div>
+<div class="ad" id="ad">
+  <div class="ad-top">
+    <div class="ad-lbl"><span id="adLbl">Ставим тебя в саф</span><span id="adSec">6</span></div>
+    <div class="ad-bar"><i id="adBar"></i></div>
+  </div>
+  <div class="ad-cap" id="adCap"></div>
+  <div class="ad-stage">
+    <div class="ad-phone">
+      <img src="ad/lock.jpg" alt="Аят на экране блокировки" id="adA">
+      <img src="ad/home.jpg" alt="Виджеты на главном экране" id="adB">
+      <div class="ad-brand" id="adC"><img src="ad/icon.png" alt=""><b>Quran Widget</b><span>Бесплатно · Android и iPhone</span></div>
+    </div>
+  </div>
+  <div class="ad-bot">
+    <div class="row2">
+      <a class="store" href="" data-adstore="play" target="_blank" rel="noopener">Google Play</a>
+      <a class="store" href="" data-adstore="appstore" target="_blank" rel="noopener">App Store</a>
+    </div>
+    <div class="gate">Внутри TikTok App Store не открывается: нажми <b>⋯</b> → <b>«Открыть в браузере»</b>. Или найди в App Store «Quran Widget».</div>
+    <button class="btn" id="adGo" disabled>Встать в саф · 6</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -238,7 +315,7 @@ if (webview) document.documentElement.dataset.webview = '1';
    в проекте приложения (он один на всех; людей считаем по vid в свойствах). */
 let vid = Math.random().toString(36).slice(2, 10);
 try { const v = localStorage.getItem('saff_vid'); if (v) vid = v; else localStorage.setItem('saff_vid', vid); } catch (e) {}
-const CLICKS = new Set(['saff_open', 'saff_store_tap', 'saff_share', 'saff_donate_open', 'saff_donate_tap']);
+const CLICKS = new Set(['saff_open', 'saff_store_tap', 'saff_share', 'saff_donate_open', 'saff_donate_tap', 'saff_join_open', 'saff_join_ad', 'saff_join']);
 function track(event_type, props = {}) {
   if (!CLICKS.has(event_type) || !AMP_KEY || REC || /^(127\.0\.0\.1|localhost)$/.test(location.hostname)) return;
   try {
@@ -250,7 +327,11 @@ function track(event_type, props = {}) {
 }
 
 /* ================= данные и кольца ================= */
-const people = await fetch('people.json').then(r => r.json()); // [uniqueId, nickname, src]
+const people = await fetch('people.json', { cache: 'no-cache' }).then(r => r.json()); // [uniqueId, nickname, src, dua?]
+// кто добавил себя сам: у себя виден сразу, у остальных — после ближайшего обновления двора
+let ME = null;
+try { ME = JSON.parse(localStorage.getItem('saff_me') || 'null'); } catch (e) {}
+if (ME && ME.u && !people.some(p => (p[0] || '').toLowerCase() === ME.u)) people.push([ME.u, '', 's', ME.dua || '', 1]);
 const N = people.length;
 const DONATE = await fetch('donate.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({}));
 const hasDonate = !!(DONATE.kaspi || DONATE.other || DONATE.card);
@@ -597,6 +678,14 @@ const THANKS_F = [
   'Мы идём плечом к плечу. Спасибо, что твоё плечо рядом с нашим.',
   'Без тебя этот круг был бы меньше. Спасибо, что ты идёшь вместе с нами.',
 ];
+const THANKS_S = [
+  'Теперь и ты в нашем круге, и он стал больше. Спасибо, что ты с нами.',
+  'Мы начинали вчетвером. Сегодня вокруг Каабы нас уже {N}, и среди них ты. Добро пожаловать.',
+  'Мы идём плечом к плечу. Спасибо, что твоё плечо теперь рядом с нашим.',
+  'Без тебя этот круг был бы меньше. Добро пожаловать в саф.',
+];
+const DUA = [['fam', 'О семье и близких'], ['ease', 'Чтобы трудное стало лёгким'], ['hajj', 'Попасть в Мекку'], ['calm', 'О покое в сердце'], ['forgive', 'О прощении']];
+const DUA_WISH = { fam: 5, ease: 8, hajj: 2, calm: 7, forgive: 12 };
 const WISHES = [
   'Пусть Аллах дарует тебе благо этого мира и благо мира вечного.',
   'Пусть однажды ты совершишь таваф вокруг Каабы не на экране, а наяву.',
@@ -614,12 +703,12 @@ const WISHES = [
 ];
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function letterHTML(i) {
-  const [u, n, src] = people[i];
+  const [u, n, src, dua, pending] = people[i];
   const h = hash(u || n);
   const name = (n && n.trim() && n.trim() !== '.') ? n.trim() : (u ? '@' + u : 'друг');
-  const thanks = (src === 'c' ? THANKS_C : THANKS_F)[h % 4].replace('{N}', fmt(N));
-  const first = h % 2 === 0 ? 0 : 1;   // первое пожелание: два мира или таваф наяву
-  const pool = WISHES.map((_, k) => k).filter(k => k !== first && !(first === 1 && k === 2));
+  const thanks = (src === 'c' ? THANKS_C : src === 's' ? THANKS_S : THANKS_F)[h % 4].replace('{N}', fmt(N));
+  const first = DUA_WISH[dua] ?? (h % 2 === 0 ? 0 : 1);   // первое пожелание: о чём дуа, иначе два мира или таваф наяву
+  const pool = WISHES.map((_, k) => k).filter(k => k !== first && !(first === 1 && k === 2) && !(first === 2 && k === 1));
   const picks = [first];
   let x = h;
   while (picks.length < 4) { x = Math.imul(x ^ (x >>> 15), 2246822507) >>> 0; const k = pool[x % pool.length]; if (!picks.includes(k)) picks.push(k); }
@@ -629,6 +718,7 @@ function letterHTML(i) {
     <div class="meta">Письмо № ${fmt(i + 1)} из ${fmt(N)}</div>
     <h2>Ассаляму алейкум, ${esc(name)}!</h2>
     <p class="place">Ты совершаешь таваф вместе с нами: кольцо ${ring[i] + 1} от Каабы${u ? ` · @${esc(u)}` : ''}</p>
+    ${pending ? '<p class="gate" style="display:block;margin:0 0 14px">Ты уже в сафе. Остальные увидят тебя после ближайшего обновления двора — обычно в течение дня.</p>' : ''}
     <p class="body">${esc(thanks)}</p>
     <p class="body">Мы желаем тебе:</p>
     <ul class="wishes">${picks.map(k => `<li>${esc(WISHES[k])}</li>`).join('')}</ul>
@@ -728,7 +818,7 @@ function renderResults(q) {
   if (!norm(q)) { resEl.classList.remove('on'); return; }
   resEl.innerHTML = list.length
     ? list.map((i, k) => `<li data-i="${i}" class="${k === 0 ? 'sel' : ''}"><span class="u">${esc(handle(people[i]))}</span>${people[i][1] && people[i][0] ? `<span class="n">${esc(people[i][1])}</span>` : ''}</li>`).join('')
-    : `<li class="none">Пока не нашли тебя. Напиши «Иду» под последним роликом в TikTok @quran.widget.app или в Instagram @indiedev2000 — добавим в следующий раз.</li>`;
+    : `<li class="none">Тебя пока нет во дворе. Встань в саф сам — это 15 секунд.<button class="btn" data-join>Добавить себя</button></li>`;
   resEl.classList.add('on');
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => { if (norm(q) !== lastQ) { lastQ = norm(q); track('saff_search', { len: lastQ.length, found: list.length > 0 }); } }, 900);
@@ -736,7 +826,7 @@ function renderResults(q) {
 qEl.addEventListener('input', () => renderResults(qEl.value));
 qEl.addEventListener('focus', () => { hideIntro(); if (qEl.value) renderResults(qEl.value); });
 qEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const li = resEl.querySelector('li[data-i]'); if (li) pick(+li.dataset.i); } });
-resEl.addEventListener('click', (e) => { const li = e.target.closest('li[data-i]'); if (li) pick(+li.dataset.i); });
+resEl.addEventListener('click', (e) => { if (e.target.closest('[data-join]')) { openJoin(qEl.value); return; } const li = e.target.closest('li[data-i]'); if (li) pick(+li.dataset.i); });
 document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.search')) resEl.classList.remove('on'); });
 
 let pulseStart = 0, pendingLetter = null;
@@ -751,11 +841,103 @@ function pick(i, fromLink = false) {
   flyTo(() => shotFor(i, now()), fromLink ? 3.2 : 2.6, 10, () => { follow = i; pendingLetter = { at: clock() + 650, i }; });
 }
 
+/* ================= добавить себя: ник → 2 вопроса → 6 секунд о приложении → в саф ================= */
+const jn = document.getElementById('jn'), jnBody = document.getElementById('jnBody'), ad = document.getElementById('ad');
+const J = { u: '', net: 'tt', dua: '', quran: '' };
+function jnStep(k) { jn.querySelectorAll('.jn-dots i').forEach((d, j) => d.classList.toggle('on', j <= k)); }
+function openJoin(pre = '') {
+  hideIntro(); resEl.classList.remove('on'); qEl.blur();
+  J.u = norm(pre).replace(/\s+/g, '');
+  jnNick(); jn.classList.add('on');
+  track('saff_join_open', {});
+}
+function jnNick() {
+  jnStep(0);
+  jnBody.innerHTML = `<h3>Встань в саф вокруг Каабы</h3>
+    <p>Напиши свой ник, и ты пойдёшь вместе с ${fmt(N)} людьми.</p>
+    <div class="jn-net"><button data-net="tt" class="${J.net === 'tt' ? 'on' : ''}">TikTok</button><button data-net="ig" class="${J.net === 'ig' ? 'on' : ''}">Instagram</button></div>
+    <div class="jn-in"><span>@</span><input id="jnU" value="${esc(J.u)}" placeholder="твой_ник" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="next" maxlength="30"></div>
+    <div class="jn-err" id="jnErr"></div>
+    <button class="btn" id="jnNext">Дальше</button>
+    <p class="jn-fine">Ник будет виден всем во дворе. Захочешь убрать — напиши нам @quran.widget.app.</p>`;
+  const inp = document.getElementById('jnU');
+  jnBody.querySelectorAll('[data-net]').forEach(b => b.onclick = () => { J.net = b.dataset.net; jnBody.querySelectorAll('[data-net]').forEach(x => x.classList.toggle('on', x === b)); });
+  const next = () => {
+    const u = norm(inp.value).replace(/\s+/g, '');
+    if (!/^[a-z0-9._]{2,30}$/.test(u)) { document.getElementById('jnErr').textContent = 'Только латиница, цифры, точка и _ — как в профиле.'; return; }
+    const had = index.find(([x]) => x === u);
+    if (had) { jn.classList.remove('on'); toast('Ты уже здесь!'); pick(had[2]); return; }
+    J.u = u; jnAsk(1);
+  };
+  document.getElementById('jnNext').onclick = next;
+  inp.onkeydown = (e) => { if (e.key === 'Enter') next(); };
+  if (!REC) setTimeout(() => inp.focus(), 50);
+}
+const QURAN = [['daily', 'Каждый день'], ['some', 'Иногда'], ['start', 'Хочу начать']];
+function jnAsk(k) {
+  jnStep(k);
+  const [title, sub, opts] = k === 1
+    ? ['О чём твоё главное дуа?', 'Первое пожелание в твоём письме будет об этом.', DUA]
+    : ['Как часто ты читаешь Коран?', 'Без правильных ответов. Нам просто важно знать.', QURAN];
+  jnBody.innerHTML = `<h3>${title}</h3><p>${sub}</p><div class="jn-chips">${opts.map(([v, t]) => `<button data-v="${v}">${t}</button>`).join('')}</div>`;
+  jnBody.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
+    if (k === 1) { J.dua = b.dataset.v; jnAsk(2); } else { J.quran = b.dataset.v; jn.classList.remove('on'); openAd(); }
+  });
+}
+document.getElementById('jnClose').onclick = () => jn.classList.remove('on');
+jn.addEventListener('click', (e) => { if (e.target === jn) jn.classList.remove('on'); });
+
+const AD_CAP = {
+  daily: ['Аят дня — прямо на экране блокировки', 'Кибла, имена Аллаха и аят — на главном экране'],
+  some: ['Один аят в день — без усилий, прямо на экране', 'Кибла, имена Аллаха и аят — на главном экране'],
+  start: ['Начни с одного аята в день — он уже на экране', 'Кибла, имена Аллаха и аят — на главном экране'],
+};
+let adT0 = 0, adRaf = 0;
+ad.querySelectorAll('[data-adstore]').forEach(a => {
+  a.href = a.dataset.adstore === 'play' ? PLAY.replace('saff', 'saff_ad') : APPSTORE + '_ad';
+  if (a.dataset.adstore === 'appstore' && platform === 'ios') a.parentNode.prepend(a);
+  a.addEventListener('click', () => track('saff_store_tap', { store: a.dataset.adstore, from: 'ad' }));
+});
+const adGo = document.getElementById('adGo');
+function openAd() {
+  ad.classList.add('on'); adT0 = clock(); adGo.disabled = true;
+  track('saff_join_ad', { quran: J.quran });
+  const caps = AD_CAP[J.quran] || AD_CAP.daily;
+  const A = document.getElementById('adA'), B = document.getElementById('adB'), C = document.getElementById('adC'), cap = document.getElementById('adCap');
+  let shown = -1;
+  const step = () => {
+    const t = (clock() - adT0) / 1000, k = t < 2.2 ? 0 : t < 4.2 ? 1 : 2;
+    if (k !== shown) {
+      shown = k; A.classList.toggle('on', k === 0); B.classList.toggle('on', k === 1); C.classList.toggle('on', k === 2);
+      cap.style.opacity = 0; setTimeout(() => { cap.textContent = k < 2 ? caps[k] : 'Пусть Коран будет рядом каждый день'; cap.style.opacity = 1; }, REC ? 0 : 180);
+    }
+    const left = Math.max(0, Math.ceil(6 - t));
+    document.getElementById('adBar').style.width = Math.min(100, t / 6 * 100) + '%';
+    document.getElementById('adSec').textContent = left ? left : '✓';
+    if (t >= 6) { adGo.disabled = false; adGo.textContent = 'Встать в саф'; document.getElementById('adLbl').textContent = 'Твоё место готово'; return; }
+    adGo.textContent = 'Встать в саф · ' + left;
+    if (!REC) adRaf = requestAnimationFrame(step);
+  };
+  window.__adStep = step;
+  step();
+}
+adGo.onclick = () => {
+  if (adGo.disabled) return;
+  const me = { u: J.u, net: J.net, dua: J.dua, quran: J.quran, at: Date.now() };
+  try { localStorage.setItem('saff_me', JSON.stringify(me)); } catch (e) {}
+  track('saff_join', { u: J.u, net: J.net, dua: J.dua, quran: J.quran });
+  if (REC) { window.__joined = me; return; }
+  document.getElementById('loading').classList.remove('done');
+  document.getElementById('loading').textContent = 'Ставим тебя в саф…';
+  setTimeout(() => { location.href = location.pathname + '?n=' + encodeURIComponent(J.u); }, 350);
+};
+
 /* ================= вступление ================= */
 const intro = document.getElementById('intro'), hint = document.getElementById('hint');
 let introHidden = false;
 function hideIntro() { if (introHidden) return; introHidden = true; intro.classList.add('hide'); setTimeout(() => { hint.classList.add('on'); setTimeout(() => hint.classList.remove('on'), 4000); }, 600); }
 document.getElementById('findBtn').onclick = () => { hideIntro(); qEl.focus(); };
+document.getElementById('joinBtn').onclick = () => openJoin('');
 canvas.addEventListener('pointerdown', () => { if (!fly) hideIntro(); });
 
 /* ================= цикл ================= */
