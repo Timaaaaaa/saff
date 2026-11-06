@@ -131,6 +131,20 @@
   html.rec * { transition: none !important; }
   html.rec .sheet.on { transform: none; }
   .search input.recfocus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(233,196,106,.25); }
+  /* ?rec=join — запись ролика «добавь себя сам»: всё в средней полосе кадра (сверху титры ролика, снизу интерфейс TikTok) */
+  html.recjoin .top { top: 29vh; }
+  html.recjoin .jn { align-items: flex-start; padding-top: 31vh; }
+  html.recjoin .ad { padding-top: 22vh; padding-bottom: 25vh; }
+  html.recjoin .top { right: 24%; }
+  html.recjoin .letter .meta { display: none; }
+  html.recjoin .letter .gate { font-size: 16.5px; line-height: 1.4; font-weight: 600; border: 2px solid #D9A93F; box-shadow: 0 0 0 4px rgba(233,196,106,.28); }
+  html.recjoin .letter.recdim .wishes li:not(:first-child) { opacity: .28; }
+  html.recjoin .sheet { right: auto; width: 87%; transform-origin: 0 100%; }
+  html.recjoin .jn-chips button.rectap, html.recjoin .btn.rectap { background: #FFF4D6; border-color: #D9A93F; box-shadow: 0 0 0 3px rgba(233,196,106,.55); }
+  html.recjoin .btn.rectap { background: linear-gradient(180deg, #F7DD98, #E0B44C); }
+  html.recjoin .letter.recwish > *:not(.wishes):not(.grab) { opacity: .3; }
+  html.recjoin .letter.recwish .wishes li:not(:first-child) { opacity: .25; }
+  html.recjoin .letter.recwish .wishes li:first-child { background: rgba(233,196,106,.32); border-radius: 10px; box-shadow: 0 0 0 2px rgba(217,169,63,.7); font-size: 18.5px; font-weight: 700; }
   .donate { width: 100%; margin-top: 8px; border-color: rgba(184,138,46,.45); color: #7A5A12; }
   .dn { position: fixed; inset: 0; z-index: 40; display: none; align-items: flex-end; justify-content: center; background: rgba(10,8,20,.55); padding: 0 12px max(12px, env(safe-area-inset-bottom)); }
   .dn.on { display: flex; }
@@ -330,7 +344,7 @@ function track(event_type, props = {}) {
 const people = await fetch('people.json', { cache: 'no-cache' }).then(r => r.json()); // [uniqueId, nickname, src, dua?]
 // кто добавил себя сам: у себя виден сразу, у остальных — после ближайшего обновления двора
 let ME = null;
-try { ME = JSON.parse(localStorage.getItem('saff_me') || 'null'); } catch (e) {}
+try { if (!new URLSearchParams(location.search).has('rec')) ME = JSON.parse(localStorage.getItem('saff_me') || 'null'); } catch (e) {}
 if (ME && ME.u && !people.some(p => (p[0] || '').toLowerCase() === ME.u)) people.push([ME.u, '', 's', ME.dua || '', 1]);
 const N = people.length;
 const DONATE = await fetch('donate.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({}));
@@ -1004,7 +1018,7 @@ function tick(ts) {
     where(found, t, W1);
     const bob = Math.abs(Math.sin(t * 3.6 + polar[found * 4 + 1] * 17)) * 0.035;
     ghost.position.set(W1.x, bob, W1.z); ghost.rotation.y = W1.th; ghost.scale.setScalar(W1.s * 1.04);
-    beam.position.set(W1.x, 15, W1.z); halo.position.set(W1.x, 0.14, W1.z);
+    beam.position.set(W1.x, 15 * beam.scale.y, W1.z); halo.position.set(W1.x, 0.14, W1.z);
     const p = (clock() - pulseStart) / 1000, o = Math.min(1, p / 0.8);
     glowMat.opacity = o * (0.35 + 0.15 * Math.sin(p * 3));
     beam.material.uniforms.o.value = o;
@@ -1029,6 +1043,7 @@ function setupRec() {
   document.documentElement.classList.add('rec');
   intro.style.display = 'none'; hint.style.display = 'none';
   const P = new URLSearchParams(location.search);
+  if (P.get('rec') === 'join') return setupRecJoin(P);
   const target = index.find(([u]) => u === norm(P.get('rec') || 'mingzye4'));
   const TI = target ? target[2] : 4;
   const nick = people[TI][0];
@@ -1064,6 +1079,115 @@ function setupRec() {
     }
     if (stage === 4 && t >= B.close + 0.3) { stage = 5; orbitA0 = Math.atan2(camera.position.x, camera.position.z); flyTo(() => orbit(orbitA0 + 0.25, 46, 30), 3.6, 0); }
     if (stage === 5 && t >= B.rise + 0.1 && !fly) { const o = orbit(orbitA0 + 0.25 + (t - B.rise - 0.1) * 0.05, 46, 30); camera.position.copy(o.pos); controls.target.copy(o.look); camera.lookAt(o.look); }
+    tick(recMs);
+    return t;
+  };
+  window.__ready = true;
+}
+
+/* ?rec=join&u=tvoy.nik&dua=fam&quran=start — запись ролика «встань в саф сам».
+   Проходит настоящие экраны добавления по таймингам B (секунды, можно переопределить ?b={json}).
+   Ничего не сохраняет: ни localStorage, ни события. Тапы пишутся в window.__taps для колец в ролике. */
+function setupRecJoin(P) {
+  document.documentElement.classList.add('recjoin');
+  const U = norm(P.get('u') || 'tvoy.nik').replace(/\s+/g, ''), DUA_V = P.get('dua') || 'fam', Q_V = P.get('quran') || 'start';
+  const B = Object.assign({
+    type0: 0.1, none: 0.8, topOut: 2.0, topIn: 3.5, tapJoin: 3.8, tt: 4.4, type1: 4.7, next: 5.7,
+    duaTap: 7.6, duaGo: 9.4, qTap: 11.4, ad: 12.2, cutAt: 6.0, cutTo: 9.4, goTap: 18.6,
+    black: 18.75, fly: 19.05, flyDur: 1.75, letter: 21.2, zoom1: 21.3, wish: 23.3, close: 25.4, pullDur: 2.4, end: 32,
+  }, JSON.parse(P.get('b') || '{}'));
+  const CH = 0.075;                              // секунд на символ при наборе
+  const TI = N - 1;                              // место в последнем кольце — туда встаёт новый человек
+  const taps = window.__taps = [];
+  const done = new Set();
+  const once = (k, t, fn) => { if (t >= B[k] && !done.has(k)) { done.add(k); fn(); } };
+  const tapAt = (el, t) => { if (!el) return; const r = el.getBoundingClientRect(); taps.push({ t: +t.toFixed(3), x: r.left + r.width / 2, y: r.top + r.height / 2 }); };
+  const typeInto = (el, t, t0, cb) => { const n = Math.max(0, Math.min(U.length, Math.floor((t - t0) / CH) + 1)); if (t >= t0 && el.value !== U.slice(0, n)) { el.value = U.slice(0, n); cb && cb(); } };
+  const top = document.querySelector('.top'), loading = document.getElementById('loading');
+  let sheetOpenAt = -1, sheetCloseAt = -1, zoom = {};
+  const sm = (a, b, t) => easeIO(Math.min(1, Math.max(0, (t - a) / (b - a))));
+  // кадр у человека: снаружи кольца, смотрим через него на Каабу — человек по центру, Кааба позади
+  const near = (tt, out = 5.2, y = 3.0) => {
+    where(TI, tt, W1); const nx = Math.cos(W1.th), nz = -Math.sin(W1.th);
+    return { pos: new THREE.Vector3(W1.x + nx * out, y, W1.z + nz * out), look: new THREE.Vector3(W1.x * 0.9, 1.7, W1.z * 0.9) };
+  };
+  // камера до добавления: двор на уровне колец, потом подъём и облёт сверху
+  const pre = (t) => {
+    const up = sm(B.topOut + 0.3, B.topIn, t), a = 0.9 + t * 0.05 + up * 0.35;
+    const r = 31 - up * 7, y = 9 + up * 15;
+    return { pos: new THREE.Vector3(Math.sin(a) * r, y, Math.cos(a) * r), look: new THREE.Vector3(0, 2 + up * -1, 0) };
+  };
+  beam.scale.y = 0.08;                           // луч только у человека (≈2,4 м), не через Каабу
+  window.__frame = (dt) => {
+    recMs += dt;
+    const t = now();
+    if (t < B.black) { const o = pre(t); camera.position.copy(o.pos); controls.target.copy(o.look); camera.lookAt(o.look); }
+    // хук: поиск своего ника
+    if (t >= B.type0 && t < B.tapJoin) { qEl.classList.add('recfocus'); typeInto(qEl, t, B.type0); }
+    once('none', t, () => renderResults(qEl.value));
+    top.style.opacity = t < B.topOut ? 1 : t < B.topIn ? Math.max(0, 1 - (t - B.topOut) / 0.3) : Math.min(1, (t - B.topIn) / 0.25);
+    once('tapJoin', t, () => tapAt(resEl.querySelector('[data-join]'), t));
+    if (t >= B.tapJoin + 0.12 && !done.has('card')) { done.add('card'); qEl.classList.remove('recfocus'); openJoin(''); top.style.visibility = 'hidden'; }
+    // шаг 1: сеть и ник
+    once('tt', t, () => { const b = jnBody.querySelector('[data-net="tt"]'); tapAt(b, t); b.click(); });
+    const inp = document.getElementById('jnU');
+    if (inp && t >= B.type1 && t < B.next) { inp.style.borderColor = '#B88A2E'; typeInto(inp, t, B.type1); }
+    once('next', t, () => { const b = document.getElementById('jnNext'); tapAt(b, t); b.classList.add('rectap'); });
+    if (t >= B.next + 0.15 && !done.has('nextGo')) { done.add('nextGo'); document.getElementById('jnNext').click(); }
+    // шаг 2 и 3: два вопроса в одно касание
+    once('duaTap', t, () => { const b = jnBody.querySelector(`[data-v="${DUA_V}"]`); tapAt(b, t); b.classList.add('rectap'); });
+    once('duaGo', t, () => jnBody.querySelector(`[data-v="${DUA_V}"]`).click());
+    once('qTap', t, () => { const b = jnBody.querySelector(`[data-v="${Q_V}"]`); tapAt(b, t); b.classList.add('rectap'); });
+    once('ad', t, () => jnBody.querySelector(`[data-v="${Q_V}"]`).click());   // настоящий openAd()
+    // 10 секунд рекламы: в ролике склейка — с cutAt перескакиваем на cutTo (кнопка включается на 10-й секунде)
+    if (ad.classList.contains('on')) {
+      if (!done.has('cut') && (clock() - adT0) / 1000 >= B.cutAt) { done.add('cut'); adT0 -= (B.cutTo - B.cutAt) * 1000; window.__cut = +t.toFixed(3); }
+      window.__adStep && window.__adStep();
+    }
+    once('goTap', t, () => { tapAt(adGo, t); adGo.classList.add('rectap'); window.__goReady = !adGo.disabled; });
+    // переход: вместо перезагрузки — короткая тёмная пауза, человек уже в последнем кольце (как у себя после добавления)
+    once('black', t, () => {
+      loading.textContent = ''; loading.classList.remove('done'); ad.classList.remove('on');
+      people[TI] = [U, '', 's', DUA_V, 1];
+      found = TI; follow = -1; meTag.textContent = '@' + U;
+      const o = pre(B.topIn + 0.1); camera.position.copy(o.pos); controls.target.copy(o.look); camera.lookAt(o.look);
+    });
+    once('fly', t, () => {
+      loading.classList.add('done');
+      ghost.visible = beam.visible = halo.visible = true; pulseStart = clock();
+      flyTo(() => near(now()), B.flyDur, 7, () => { follow = TI; });
+    });
+    once('letter', t, () => {
+      openLetter(TI); liftTo = 1.75; sheetOpenAt = t;
+      letter.classList.add('recdim');                                   // пожелания кроме первого приглушены сразу
+      const sg = letter.querySelector('.sign'); if (sg) sg.textContent = 'С теплом, команда Quran Widget';   // без даты сборки двора
+    });   // лист крупнее обычного — поднимаем кадр сильнее, чтобы человек был над письмом
+    // письмо крупнее (×1,15, лист сужен до 87 %, чтобы после зума влезал по ширине), потом подсветка первой строки
+    if (sheetOpenAt >= 0 && sheetCloseAt < 0) {
+      const k = easeIO(Math.min(1, (t - sheetOpenAt) / 0.5));
+      sheet.style.transform = `translateY(${(1 - k) * 125}%) scale(1.15)`;
+      if (t >= B.wish) {
+        const w = letter.querySelector('.wishes li');
+        if (!zoom.w && w) {
+          letter.classList.add('recwish'); zoom.w = 1; zoom.st0 = sheet.scrollTop;
+          const tr = sheet.style.transform; sheet.style.transform = 'none';
+          zoom.st = Math.max(0, zoom.st0 + w.getBoundingClientRect().top - sheet.getBoundingClientRect().top - sheet.clientHeight * 0.3);
+          sheet.style.transform = tr;
+        }
+        sheet.scrollTop = zoom.st0 + (zoom.st - zoom.st0) * sm(B.wish, B.wish + 0.6, t);
+      }
+    }
+    once('close', t, () => { sheetCloseAt = t; follow = -1; });
+    if (sheetCloseAt >= 0) {
+      const k = easeIO(Math.min(1, (t - sheetCloseAt) / 0.5));
+      sheet.style.transform = `translateY(${k * 125}%) scale(1.15)`;   // ×1,15 от низа — уводим дальше, чтобы край листа не торчал
+      if (k >= 1 && sheet.classList.contains('on')) { sheet.classList.remove('on'); liftTo = 0; }
+    }
+    // развязка: медленный отъезд на общий план, плашка tvoy.nik остаётся видна; потом тихая орбита
+    if (t >= B.close + 0.2 && !done.has('pull')) {
+      done.add('pull'); follow = -1;
+      flyTo(() => { const o = near(now(), 16, 8); o.look.set(W1.x * 0.565, 1, W1.z * 0.565); return o; }, B.pullDur, 0, () => { follow = TI; });
+    }
     tick(recMs);
     return t;
   };
