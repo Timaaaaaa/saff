@@ -13,6 +13,7 @@ e = {"event_type": "saff_join", "group_by": [{"type": "event", "value": "u"}, {"
 r = requests.get(f"https://{env['AMPLITUDE_HOST']}/api/2/events/segmentation", headers=H, timeout=120,
                  params={"e": json.dumps(e), "start": start.strftime('%Y%m%d'), "end": end.strftime('%Y%m%d'), "m": "totals", "limit": 1000})
 if r.status_code == 400 and 'event_type_not_found' in r.text: print('saff_join ещё ни разу не было'); sys.exit(0)
+if r.status_code == 400 and 'event_type_not_found' in r.text: print('saff_join ещё ни разу не было'); sys.exit(0)
 r.raise_for_status(); d = r.json()['data']
 BAD = re.compile(r'(sex|porn|xxx|fuck|suka|blyad|xuy|huy|pidor|casino|1xbet|bet)', re.I)
 path = os.path.expanduser('~/saff-site/people.json')
