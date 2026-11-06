@@ -257,7 +257,7 @@
 </div>
 <div class="ad" id="ad">
   <div class="ad-top">
-    <div class="ad-lbl"><span id="adLbl">Ставим тебя в саф</span><span id="adSec">6</span></div>
+    <div class="ad-lbl"><span id="adLbl">Ставим тебя в саф</span><span id="adSec">10</span></div>
     <div class="ad-bar"><i id="adBar"></i></div>
   </div>
   <div class="ad-cap" id="adCap"></div>
@@ -274,7 +274,7 @@
       <a class="store" href="" data-adstore="appstore" target="_blank" rel="noopener">App Store</a>
     </div>
     <div class="gate">Внутри TikTok App Store не открывается: нажми <b>⋯</b> → <b>«Открыть в браузере»</b>. Или найди в App Store «Quran Widget».</div>
-    <button class="btn" id="adGo" disabled>Встать в саф · 6</button>
+    <button class="btn" id="adGo" disabled>Встать в саф · 10</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -888,7 +888,7 @@ document.getElementById('jnClose').onclick = () => jn.classList.remove('on');
 jn.addEventListener('click', (e) => { if (e.target === jn) jn.classList.remove('on'); });
 
 // 10 секунд по кругу: 5 кадров по 2 с. Кнопка «Встать в саф» включается через AD_WAIT секунд, ролик крутится дальше.
-const AD_LOOP = 10, AD_WAIT = 6;
+const AD_LOOP = 10, AD_WAIT = 10;
 const AD_FIRST = {
   daily: 'Аят дня — прямо на экране блокировки',
   some: 'Один аят в день — без усилий, прямо на экране',
