@@ -24,7 +24,8 @@ for lab in d['seriesLabels']:
     parts = str(lab[1] if isinstance(lab, list) else lab).split('; ') + ['']
     u, dua = parts[0], parts[1]
     u = u.strip().lower().lstrip('@'); dua = dua.strip() if dua.strip() in ('fam', 'ease', 'hajj', 'calm', 'forgive') else ''
-    if not re.fullmatch(r'[a-z0-9._]{2,30}', u) or u in have or BAD.search(u) or u in ('quran.widget.app', 'indiedev2000', '123123123asdasd', 'temirlantemirlantemirlantemir')  # свои аккаунты и тесты владельца: continue
+    if not re.fullmatch(r'[a-z0-9._]{2,30}', u) or u in have or BAD.search(u) or u in ('quran.widget.app', 'indiedev2000', '123123123asdasd', 'temirlantemirlantemirlantemir'):  # свои аккаунты и тесты владельца
+        continue
     have.add(u); people.append([u, '', 's', dua] if dua else [u, '', 's']); added.append(u)
 json.dump(people, open(path, 'w'), ensure_ascii=False, separators=(',', ':'))
 print(f'saff_join за {days} дн.: новых {len(added)} → всего {len(people)}', added)
