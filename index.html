@@ -8,7 +8,7 @@
 <meta property="og:title" content="Вокруг Каабы — найди себя">
 <meta property="og:description" content="Мы не смогли уместить всех в одно видео. Здесь стоят все.">
 <meta name="theme-color" content="#1B1530">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api2.amplitude.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api2.amplitude.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -134,7 +134,7 @@
   /* ?rec=join — запись ролика «добавь себя сам»: всё в средней полосе кадра (сверху титры ролика, снизу интерфейс TikTok) */
   html.recjoin .top { top: 29vh; }
   html.recjoin .jn { align-items: flex-start; padding-top: 31vh; }
-  html.recjoin .ad { padding-top: 22vh; padding-bottom: 25vh; }
+  html.recjoin .wbw { padding-top: 22vh; padding-bottom: 25vh; }
   html.recjoin .top { right: 24%; }
   html.recjoin .letter .meta { display: none; }
   html.recjoin .letter .gate { font-size: 16.5px; line-height: 1.4; font-weight: 600; border: 2px solid #D9A93F; box-shadow: 0 0 0 4px rgba(233,196,106,.28); }
@@ -205,29 +205,50 @@
   .jn-chips button { min-height: 50px; text-align: left; padding: 0 16px; border-radius: 12px; border: 1px solid #E3D2AC; background: #fff; font: 600 15.5px var(--sans); color: var(--paper-ink); cursor: pointer; }
   .jn-chips button:active { background: #FFF4D6; }
   .jn-fine { font: 400 12px/1.4 var(--sans); color: var(--paper-muted); margin: 12px 0 0; text-align: center; }
-  /* 6 секунд о приложении, пока ставим в саф */
-  .ad { position: fixed; inset: 0; z-index: 44; display: none; flex-direction: column; align-items: center; background: radial-gradient(120% 70% at 50% 0%, #2A2050 0%, var(--night) 60%); padding: max(14px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom)); }
-  .ad.on { display: flex; }
-  .ad-top { width: 100%; max-width: 440px; }
-  .ad-lbl { display: flex; justify-content: space-between; font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
-  .ad-bar { height: 3px; border-radius: 2px; background: rgba(255,255,255,.14); overflow: hidden; }
-  .ad-bar i { display: block; height: 100%; width: 0; background: var(--gold); }
-  .ad-cap { font: 700 23px/1.2 var(--serif); text-align: center; color: var(--ink); margin: 16px 0 12px; min-height: 2.4em; max-width: 380px; transition: opacity .35s; }
-  .ad-stage { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; display: grid; place-items: center; }
-  .ad-phone { position: relative; height: 100%; max-height: 520px; aspect-ratio: 576 / 1150; border-radius: 26px; overflow: hidden; border: 3px solid rgba(255,255,255,.16); box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 50px rgba(233,196,106,.15); background: #000; }
-  .ad-phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0; transition: opacity .5s, transform .9s cubic-bezier(.3,.7,.2,1), transform-origin .9s cubic-bezier(.3,.7,.2,1); }
-  .ad-phone img.on { opacity: 1; }
-  .ad-brand { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; background: linear-gradient(180deg, #13261C, #0C1712); opacity: 0; transition: opacity .5s; text-align: center; padding: 16px; }
-  .ad-brand.on { opacity: 1; }
-  .ad-brand img { position: static; opacity: 1; transform: none; width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 8px 30px rgba(233,196,106,.3); }
-  .ad-brand b { font: 700 22px/1.2 var(--sans); color: #fff; }
-  .ad-brand span { font: 500 14px/1.4 var(--sans); color: #CFE3D6; }
-  .ad-bot { width: 100%; max-width: 440px; display: grid; gap: 8px; margin-top: 14px; }
-  .ad-bot .row2 { margin-top: 0; }
-  .ad .store { height: 46px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); font-size: 14px; }
-  .ad .btn[disabled] { opacity: .55; cursor: default; }
-  .ad .gate { margin-top: 0; }
-  @media (max-height: 640px) { .ad-cap { font-size: 19px; margin: 10px 0 8px; } .ad .store { height: 42px; } }
+  /* 10 секунд о приложении, пока ставим в саф: настоящие кадры Quran Widget 1.27.1 (разбор аята 1:7 по словам) */
+  .wbw { position: fixed; inset: 0; z-index: 44; display: none; flex-direction: column; align-items: center; background: radial-gradient(120% 70% at 50% 0%, #2A2050 0%, var(--night) 60%); padding: max(14px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom)); }
+  .wbw.on { display: flex; }
+  .wbw-top { width: 100%; max-width: 440px; }
+  .wbw-lbl { display: flex; justify-content: space-between; font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+  .wbw-bar { height: 3px; border-radius: 2px; background: rgba(255,255,255,.14); overflow: hidden; }
+  .wbw-bar i { display: block; height: 100%; width: 0; background: var(--gold); }
+  .wbw-cap { font: 700 23px/1.2 var(--serif); text-align: center; color: var(--ink); margin: 14px 0 10px; min-height: 2.4em; max-width: 380px; display: flex; align-items: center; justify-content: center; text-wrap: balance; }
+  .wbw-stage { position: relative; flex: 1 1 0; min-height: 0; width: 100%; max-width: 440px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .wbw-words { width: 100%; min-height: 58px; flex: none; text-align: left; padding: 0 2px; box-sizing: border-box; }
+  .wbw-words-k { min-height: 15px; font: 600 11px/15px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--gold-deep); margin-bottom: 4px; }
+  .wbw-words-v { display: flex; flex-wrap: wrap; justify-content: flex-start; font: 600 14px/1.3 var(--sans); color: var(--gold); }
+  .wbw-words-v span { display: inline-block; opacity: 0; white-space: nowrap; }
+  .wbw-words-v b { font-weight: 400; color: rgba(233,196,106,.55); margin: 0 .45em; }
+  .wbw-words-v span.wrap { flex-basis: 100%; }
+  .wbw-words-v span.wrap b { display: none; }
+  .wbw.narrow .wbw-words-v { font-size: 13px; }
+  .wbw-shot { --cw: 358px; position: relative; flex: none; width: 100%; height: 400px; min-height: 220px; overflow: hidden; border-radius: 22px; border: 1px solid rgba(233,196,106,.35); box-shadow: 0 18px 50px rgba(0,0,0,.45); background: #0F1F17; }
+  .wbw-base, .wbw-rings { position: absolute; left: 0; right: 0; bottom: calc(-1 * var(--dy, 0px)); aspect-ratio: 1080 / 1732; pointer-events: none; }
+  .wbw-base img { display: block; width: 100%; height: 100%; }
+  .wbw-wordbox { position: absolute; display: none; top: 28.64%; height: 7.16%; box-sizing: border-box; border: 1.5px solid rgba(233,196,106,.9); background: rgba(233,196,106,.16); border-radius: calc(var(--cw) * .017); }
+  .wbw-q { position: absolute; bottom: 16%; left: 8%; right: 8%; padding: 14px 0; text-align: center; font: 600 22px/1.25 var(--serif); color: var(--ink); text-shadow: 0 2px 10px rgba(0,0,0,.7); text-wrap: balance; background: linear-gradient(180deg, transparent, rgba(8,10,16,.55) 30%, rgba(8,10,16,.55) 70%, transparent); }
+  .wbw.narrow .wbw-q { font-size: 20px; }
+  .wbw-B { position: absolute; left: 0; bottom: calc(-1 * var(--dy, 0px)); width: 100%; height: auto; display: block; opacity: 0; transform: translate3d(0,100%,0); will-change: transform, opacity; border-radius: calc(var(--cw) * .045) calc(var(--cw) * .045) 0 0; }
+  #wbwB1 { z-index: 1; } #wbwB2 { z-index: 2; } #wbwB3 { z-index: 3; } #wbwB4 { z-index: 4; }
+  .wbw-rings { z-index: 5; }
+  .wbw-ring { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--gold); box-shadow: 0 0 14px rgba(233,196,106,.6); opacity: 0; }
+  .wbw-plate { position: absolute; z-index: 6; left: 0; right: 0; bottom: 0; height: clamp(150px, 32%, 190px); display: flex; flex-direction: column; justify-content: flex-end; align-items: center; text-align: center; padding: 0 18px 14px; box-sizing: border-box; background: linear-gradient(180deg, rgba(10,8,20,0) 0%, rgba(10,8,20,.92) 24%, #0A0814 46%); pointer-events: none; opacity: 0; visibility: hidden; will-change: transform, opacity; }
+  .wbw-plate-h { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font: 700 24px/1 var(--serif); color: var(--ink); }
+  .wbw-plate-h img { width: 52px; height: 52px; border-radius: 12px; }
+  .wbw-plate p { margin: 0; }
+  .wbw-p1 { font: 500 15px/1.35 var(--sans); color: var(--ink); max-width: 330px; text-wrap: balance; }
+  .wbw-p2 { margin-top: 4px !important; font: 400 12.5px/1.35 var(--sans); color: rgba(247,241,230,.7); }
+  .wbw.narrow .wbw-p1 { font-size: 14px; }
+  .wbw.short .wbw-p2 { display: none; }
+  .wbw.shift .wbw-plate { background: linear-gradient(180deg, rgba(10,8,20,0) 0, rgba(10,8,20,.96) 18px, #0A0814 26px); }
+  .wbw-plate svg { width: 18px; height: 18px; margin-top: 8px; fill: none; stroke: var(--gold); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .wbw-pill { position: absolute; z-index: 7; top: 10px; left: 10px; padding: 5px 10px; border-radius: 999px; background: rgba(0,0,0,.55); border: 1px solid rgba(233,196,106,.5); font: 600 12px/1.2 var(--sans); letter-spacing: .02em; color: rgba(247,241,230,.95); }
+  .wbw-bot { width: 100%; max-width: 440px; display: grid; gap: 8px; margin-top: 12px; }
+  .wbw-bot .row2 { margin-top: 0; }
+  .wbw .store { height: 46px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); font-size: 14px; }
+  .wbw .btn[disabled] { opacity: .55; cursor: default; }
+  .wbw .gate { margin-top: 0; }
+  @media (max-height: 640px) { .wbw-cap { font-size: 19px; margin: 10px 0 8px; } .wbw .store { height: 42px; } .wbw-words { display: none; } }
 </style>
 </head>
 <body>
@@ -269,26 +290,44 @@
     <div id="jnBody"></div>
   </div>
 </div>
-<div class="ad" id="ad">
-  <div class="ad-top">
-    <div class="ad-lbl"><span id="adLbl">Ставим тебя в саф</span><span id="adSec">10</span></div>
-    <div class="ad-bar"><i id="adBar"></i></div>
+<div class="wbw" id="wbw">
+  <div class="wbw-top">
+    <div class="wbw-lbl"><span id="wbwLbl">Ставим тебя в саф</span><span id="wbwSec">10</span></div>
+    <div class="wbw-bar"><i id="wbwBar"></i></div>
   </div>
-  <div class="ad-cap" id="adCap"></div>
-  <div class="ad-stage">
-    <div class="ad-phone">
-      <img src="ad/lock.jpg" alt="Аят на экране блокировки" id="adA">
-      <img src="ad/home.jpg" alt="Виджеты на главном экране" id="adB">
-      <div class="ad-brand" id="adC"><img src="ad/icon.png" alt=""><b>Quran Widget</b><span>Бесплатно · Android и iPhone</span></div>
+  <div class="wbw-cap" id="wbwCap"></div>
+  <div class="wbw-stage" id="wbwStage">
+    <div class="wbw-words" id="wbwWords">
+      <div class="wbw-words-k" id="wbwWk"></div>
+      <div class="wbw-words-v"><span>путь</span><span><b>·</b>(из) тех</span><span><b>·</b>Ты облагодетельствовал</span><span><b>·</b>на них</span></div>
+    </div>
+    <div class="wbw-shot" id="wbwShot" aria-hidden="true">
+      <div class="wbw-base">
+        <img data-src="ad/wbw-base.webp" alt="" decoding="async">
+        <div class="wbw-wordbox" id="wbwBox"></div>
+      </div>
+      <div class="wbw-q" id="wbwQ">Знаешь, что значит каждое слово?</div>
+      <img class="wbw-B" id="wbwB1" data-src="ad/wbw-w1.webp" alt="" decoding="async">
+      <img class="wbw-B" id="wbwB2" data-src="ad/wbw-w2.webp" alt="" decoding="async">
+      <img class="wbw-B" id="wbwB3" data-src="ad/wbw-w3.webp" alt="" decoding="async">
+      <img class="wbw-B" id="wbwB4" data-src="ad/wbw-w4.webp" alt="" decoding="async">
+      <div class="wbw-rings"><i class="wbw-ring" id="wbwRing"></i></div>
+      <div class="wbw-plate" id="wbwPlate">
+        <div class="wbw-plate-h"><img data-src="ad/icon.png" alt="" decoding="async">Quran Widget</div>
+        <p class="wbw-p1" id="wbwP1"></p>
+        <p class="wbw-p2" id="wbwP2"></p>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="wbw-pill" id="wbwPill">Наше приложение</div>
     </div>
   </div>
-  <div class="ad-bot">
+  <div class="wbw-bot">
     <div class="row2">
-      <a class="store" href="" data-adstore="play" target="_blank" rel="noopener">Google Play</a>
-      <a class="store" href="" data-adstore="appstore" target="_blank" rel="noopener">App Store</a>
+      <a class="store" href="" data-wbwstore="play" target="_blank" rel="noopener">Google Play</a>
+      <a class="store" href="" data-wbwstore="appstore" target="_blank" rel="noopener">App Store</a>
     </div>
     <div class="gate">Внутри TikTok App Store не открывается: нажми <b>⋯</b> → <b>«Открыть в браузере»</b>. Или найди в App Store «Quran Widget».</div>
-    <button class="btn" id="adGo" disabled>Встать в саф · 10</button>
+    <button class="btn" id="wbwGo" disabled>Встать в саф · 10</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -856,13 +895,14 @@ function pick(i, fromLink = false) {
 }
 
 /* ================= добавить себя: ник → 2 вопроса → 6 секунд о приложении → в саф ================= */
-const jn = document.getElementById('jn'), jnBody = document.getElementById('jnBody'), ad = document.getElementById('ad');
+const jn = document.getElementById('jn'), jnBody = document.getElementById('jnBody'), ad = document.getElementById('wbw');
 const J = { u: '', net: 'tt', dua: '', quran: '' };
 function jnStep(k) { jn.querySelectorAll('.jn-dots i').forEach((d, j) => d.classList.toggle('on', j <= k)); }
 function openJoin(pre = '') {
   hideIntro(); resEl.classList.remove('on'); qEl.blur();
   J.u = norm(pre).replace(/\s+/g, '');
   jnNick(); jn.classList.add('on');
+  adLoad();                                      // кадры рекламы декодируются, пока человек пишет ник
   track('saff_join_open', {});
 }
 function jnNick() {
@@ -901,49 +941,151 @@ function jnAsk(k) {
 document.getElementById('jnClose').onclick = () => jn.classList.remove('on');
 jn.addEventListener('click', (e) => { if (e.target === jn) jn.classList.remove('on'); });
 
-// 10 секунд по кругу: 5 кадров по 2 с. Кнопка «Встать в саф» включается через AD_WAIT секунд, ролик крутится дальше.
+// 10 секунд по кругу — одна главная функция на настоящих кадрах Quran Widget 1.27.1: нажатие на слово аята 1:7
+// открывает лист с переводом и транслитом (4 слова), лист уходит, плашка ведёт к кнопкам сторов.
+// Всё состояние — чистая функция от u (секунды цикла) внутри step: в rec-режиме кадры двигает window.__frame.
+// Кнопка «Встать в саф» включается через AD_WAIT секунд.
 const AD_LOOP = 10, AD_WAIT = 10;
-const AD_FIRST = {
-  daily: 'Аят дня — прямо на экране блокировки',
-  some: 'Один аят в день — без усилий, прямо на экране',
-  start: 'Начни с одного аята в день — он уже на экране',
-};
-// img: 0 — экран блокировки, 1 — главный экран, 2 — заставка; z: [масштаб, origin-x %, origin-y %]
-const AD_SLIDES = [
-  { img: 0, z: [1, 50, 50] },
-  { img: 1, z: [1, 50, 50], cap: 'Виджеты Корана — на главном экране' },
-  { img: 1, z: [2.3, 4, 2], cap: 'Кибла — где бы ты ни был' },
-  { img: 1, z: [2.3, 96, 2], cap: 'Имя Аллаха — новое каждый день' },
-  { img: 2, cap: 'Пусть Коран будет рядом каждый день' },
-];
-let adT0 = 0, adRaf = 0;
-ad.querySelectorAll('[data-adstore]').forEach(a => {
-  a.href = a.dataset.adstore === 'play' ? PLAY.replace('saff', 'saff_ad') : APPSTORE + '_ad';
-  if (a.dataset.adstore === 'appstore' && platform === 'ios') a.parentNode.prepend(a);
-  a.addEventListener('click', () => track('saff_store_tap', { store: a.dataset.adstore, from: 'ad' }));
+const AD_IOS = platform === 'ios';
+const AD_CAP1 = { daily: 'Ты знаешь Фатиху наизусть', some: 'Фатиху ты слышал тысячи раз', start: 'Начни с Фатихи\u00a0— первой суры Корана' };
+const AD_CAP1_ANY = 'Фатиха звучит в каждом намазе';
+const AD_CAP2 = AD_IOS ? 'На Android: нажми на слово\u00a0— увидишь смысл' : 'Нажми на слово\u00a0— увидишь смысл';
+const AD_CAP3 = AD_IOS ? 'На iPhone\u00a0— аят дня, виджеты и тафсир' : 'Начни понимать, что читаешь';
+const AD_P1 = AD_IOS ? 'На iPhone: все виджеты, аят дня и\u00a0тафсир\u00a0— бесплатно' : 'Перевод и транслит каждого слова\u00a0— бесплатно, во\u00a0всех 114 сурах';
+const AD_P2 = AD_IOS ? 'Время намаза · кибла · тасбих' : 'русский · қазақша · кыргызча · oʻzbekcha';
+// слова аята 1:7 на кадре (% от слоя A, кроп 1080×1732 с y=540; рамки сверены по пикселям кадров 3,0/4,6/6,2/6,93 с)
+const AD_W = [{ l: 71.85, w: 15.74, cx: 79.68 }, { l: 56.85, w: 15.0, cx: 64.31 }, { l: 39.63, w: 17.22, cx: 48.19 }, { l: 23.33, w: 16.3, cx: 31.44 }];
+const AD_CY = 32.19;
+const AD_SEL = [1.20, 3.10, 4.70, 6.30], AD_CLOSE = 7.90;        // смена слова (рамка + лист), закрытие листа
+const AD_WT = [1.60, 3.40, 5.00, 6.60];                          // появление значения в строке слов
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const eo = (x) => 1 - Math.pow(1 - x, 3), ei = (x) => x * x * x, lin = (x) => x;
+const seg = (u, a, d, f) => f(clamp01((u - a) / d));
+// подгрузка кадров рекламы: src ставится, только когда человек начал добавляться (openJoin), а не у каждого посетителя
+function adLoad() {
+  if (window.__adAssets) return window.__adAssets;
+  const imgs = [...ad.querySelectorAll('img[data-src]')];
+  imgs.forEach(i => { i.src = i.dataset.src; });
+  return (window.__adAssets = Promise.all(imgs.map(i => i.decode().catch(() => {}))));
+}
+let adT0 = 0, adRaf = 0, adCW = 358, adCH = 400;
+ad.querySelectorAll('[data-wbwstore]').forEach(a => {
+  a.href = a.dataset.wbwstore === 'play' ? PLAY.replace('saff', 'saff_ad') : APPSTORE + '_ad';
+  if (a.dataset.wbwstore === 'appstore' && platform === 'ios') a.parentNode.prepend(a);
+  a.addEventListener('click', () => track('saff_store_tap', { store: a.dataset.wbwstore, from: 'ad' }));
 });
-const adGo = document.getElementById('adGo');
+const adGo = document.getElementById('wbwGo');
+const adE = {};
+['adStage', 'adWords', 'adWk', 'adShot', 'adBox', 'adQ', 'adB1', 'adB2', 'adB3', 'adB4', 'adRing', 'adPlate', 'adP1', 'adP2', 'adPill', 'adCap'].forEach(k => adE[k] = document.getElementById(k.replace(/^ad/, 'wbw')));
+const adWs = [...adE.adWords.querySelectorAll('.wbw-words-v span')];
+const adStores = [...ad.querySelectorAll('[data-wbwstore]')];
+adE.adP1.textContent = AD_P1; adE.adP2.textContent = AD_P2;
+adE.adPill.textContent = AD_IOS ? 'Наше приложение · показан Android' : 'Наше приложение';
+// пишем стиль, только если значение поменялось — без лишних инвалидаций на слабых Android
+const adSet = (el, k, v) => { const c = el.__s || (el.__s = {}); if (c[k] !== v) { c[k] = v; el.style[k] = v; } };
+const adTxt = (el, v) => { if (el.__t !== v) { el.__t = v; el.textContent = v; } };
+// высота карточки — в openAd и по ResizeObserver; step layout не читает
+function adLayout() {
+  const st = adE.adStage.clientHeight, sw = adE.adStage.clientWidth;
+  if (!st || !sw) return;
+  const words = st >= 380 && !matchMedia('(max-height: 640px)').matches;
+  adE.adWords.style.display = words ? '' : 'none';
+  const wh = words ? adE.adWords.offsetHeight + 8 : 0;
+  adCW = sw; adCH = Math.max(220, Math.min(st - wh, sw * 1732 / 1080));
+  adE.adShot.style.height = adCH + 'px';
+  adE.adShot.style.setProperty('--cw', adCW + 'px');
+  // низкая карточка: кадр прижат к низу, но строка аята (y≈1036) и верх листа обязаны остаться в кадре —
+  // тогда сдвигаем кадры вниз так, чтобы верх карточки был на y=920 исходника (место под пилюлю), а режется низ листа
+  const s = adCW / 1080, need = (2272 - 920) * s;
+  adE.adShot.style.setProperty('--dy', Math.max(0, need - adCH).toFixed(1) + 'px');
+  ad.classList.toggle('shift', need > adCH);
+  // тогда под плашкой оказался бы перевод с главного экрана: плашка закрывает его целиком, верх — между арабской строкой и переводом (y≈1320)
+  adE.adPlate.style.height = need > adCH ? Math.max(150, adCH - (1320 - 920) * s).toFixed(0) + 'px' : '';
+  // разделитель « · » не начинает строку при переносе
+  if (words) adWs.forEach((el, i) => { el.classList.remove('wrap'); });
+  if (words) adWs.forEach((el, i) => { if (i && el.offsetTop > adWs[i - 1].offsetTop + 2) el.classList.add('wrap'); });
+  ad.classList.toggle('narrow', adCW < 350);
+  ad.classList.toggle('short', adCH < 300);
+}
+if (window.ResizeObserver) new ResizeObserver(adLayout).observe(adE.adStage);
+// кадр рекламы в момент u (0…10 с)
+function adFrame(u) {
+  const cap1 = AD_CAP1[J.quran] || AD_CAP1_ANY;
+  // заголовок: гаснет → смена текста → проявляется
+  let cap, co;
+  if (u < 1.20) { cap = cap1; co = 1 - seg(u, 1.05, 0.15, lin); }
+  else if (u < 7.05) { cap = AD_CAP2; co = u < 6.90 ? seg(u, 1.20, 0.20, lin) : 1 - seg(u, 6.90, 0.15, lin); }
+  else if (u < 9.70) { cap = AD_CAP3; co = u < 9.60 ? seg(u, 7.05, 0.20, lin) : 1 - seg(u, 9.60, 0.10, lin); }
+  else { cap = cap1; co = seg(u, 9.70, 0.20, lin); }
+  adTxt(adE.adCap, cap); adSet(adE.adCap, 'opacity', co.toFixed(3));
+  // вопрос на карточке
+  adSet(adE.adQ, 'opacity', (u < 5 ? 1 - seg(u, 1.00, 0.25, lin) : seg(u, 9.70, 0.30, lin)).toFixed(3));
+  // рамка слова: перескакивает мгновенно, исчезает при закрытии листа — как в приложении
+  let wi = -1; for (let i = 0; i < 4; i++) if (u >= AD_SEL[i]) wi = i;
+  if (u >= AD_CLOSE) wi = -1;
+  adSet(adE.adBox, 'display', wi < 0 ? 'none' : 'block');
+  if (wi >= 0) { adSet(adE.adBox, 'left', AD_W[wi].l + '%'); adSet(adE.adBox, 'width', AD_W[wi].w + '%'); }
+  // кольцо нажатия: за 0,20 с до смены слова, 0,40 с
+  let ri = -1; for (let i = 0; i < 4; i++) if (u >= AD_SEL[i] - 0.2 && u < AD_SEL[i] + 0.2) ri = i;
+  if (ri < 0) adSet(adE.adRing, 'opacity', '0');
+  else {
+    const p = seg(u, AD_SEL[ri] - 0.2, 0.4, lin);
+    adSet(adE.adRing, 'left', AD_W[ri].cx + '%'); adSet(adE.adRing, 'top', AD_CY + '%');
+    adSet(adE.adRing, 'opacity', (0.9 * (1 - p)).toFixed(3));
+    adSet(adE.adRing, 'transform', `scale(${(0.4 + 0.95 * eo(p)).toFixed(3)})`);
+  }
+  // листы: приходящий проявляется поверх уходящего, уходящий гасится после — Кааба сквозь лист не проступает
+  const L = [[0, 100], [0, 100], [0, 100], [0, 100]];
+  if (u >= 1.20 && u < 3.35) L[0] = [1, (1 - seg(u, 1.20, 0.35, eo)) * 100];
+  if (u >= 3.10 && u < 4.95) L[1] = [seg(u, 3.10, 0.25, lin), 0];
+  if (u >= 4.70 && u < 6.70) L[2] = [u < 6.55 ? seg(u, 4.70, 0.25, lin) : 1 - seg(u, 6.55, 0.15, lin), 0];
+  if (u >= 6.30 && u < 8.25) L[3] = [u < AD_CLOSE ? seg(u, 6.30, 0.25, lin) : 1, seg(u, AD_CLOSE, 0.35, ei) * 100];
+  L.forEach(([o, y], i) => { const el = adE['adB' + (i + 1)]; adSet(el, 'opacity', o.toFixed(3)); adSet(el, 'transform', `translate3d(0,${y.toFixed(2)}%,0)`); });
+  // строка слов над карточкой
+  let k = -1; for (let i = 0; i < 4; i++) if (u >= AD_WT[i]) k = i;
+  adTxt(adE.adWk, k < 0 ? '' : `${k + 1} из 9 слов аята`);
+  let ko = k < 0 ? 0 : k === 0 ? seg(u, 1.60, 0.30, lin) : seg(u, AD_WT[k], 0.25, lin);
+  if (k >= 0 && k < 3 && u >= AD_WT[k + 1] - 0.12) ko = 1 - seg(u, AD_WT[k + 1] - 0.12, 0.12, lin);   // подпись гаснет перед сменой цифры
+  adSet(adE.adWk, 'opacity', ko.toFixed(3));
+  adWs.forEach((el, i) => {
+    const p = seg(u, AD_WT[i], 0.30, eo);
+    adSet(el, 'opacity', p.toFixed(3)); adSet(el, 'transform', `translateY(${((1 - p) * 6).toFixed(2)}px)`);
+  });
+  adSet(adE.adWords, 'opacity', (1 - seg(u, 9.40, 0.30, lin)).toFixed(3));
+  // плашка после ухода листа, шеврон к кнопкам сторов
+  const on = u >= 8.20 && u < 9.70;
+  adSet(adE.adPlate, 'visibility', on ? 'visible' : 'hidden');
+  if (on) {
+    const p = seg(u, 8.20, 0.40, eo);
+    adSet(adE.adPlate, 'opacity', (p * (1 - seg(u, 9.45, 0.25, lin))).toFixed(3));
+    adSet(adE.adPlate, 'transform', `translate3d(0,${((1 - p) * 10).toFixed(2)}px,0)`);
+    const sv = adE.adPlate.lastElementChild;
+    sv.style.transform = `translateY(${(3 * Math.sin((u - 8.20) * 2 * Math.PI / 1.2)).toFixed(2)}px)`;
+  } else adSet(adE.adPlate, 'opacity', '0');
+  // кнопки сторов «дышат» под плашкой
+  const glow = u >= 8.40 && u < 9.70;
+  const g = glow ? (0.25 + 0.2 * Math.sin((u - 8.40) * 2 * Math.PI / 1.2)) * (1 - seg(u, 9.45, 0.25, lin)) : 0;
+  adStores.forEach(a => {
+    adSet(a, 'boxShadow', glow ? `0 0 0 2px rgba(233,196,106,${g.toFixed(3)})` : '');
+    adSet(a, 'borderColor', glow ? `rgba(233,196,106,${(0.35 + g).toFixed(3)})` : '');
+  });
+}
 function openAd() {
+  adLoad();
   ad.classList.add('on'); adT0 = clock(); adGo.disabled = true;
   track('saff_join_ad', { quran: J.quran });
-  const imgs = [document.getElementById('adA'), document.getElementById('adB'), document.getElementById('adC')], cap = document.getElementById('adCap');
-  let shown = -1, ready = false;
+  adLayout();
+  let ready = false;
   const step = () => {
     if (!ad.classList.contains('on')) return;
-    const t = (clock() - adT0) / 1000, k = Math.floor((t % AD_LOOP) / (AD_LOOP / AD_SLIDES.length)), sl = AD_SLIDES[k];
-    if (k !== shown) {
-      shown = k;
-      imgs.forEach((el, j) => el.classList.toggle('on', j === sl.img));
-      if (sl.z) { const [z, ox, oy] = sl.z; imgs[sl.img].style.transformOrigin = `${ox}% ${oy}%`; imgs[sl.img].style.transform = `scale(${z})`; }
-      const text = sl.cap || AD_FIRST[J.quran] || AD_FIRST.daily;
-      if (cap.textContent !== text) { cap.style.opacity = 0; setTimeout(() => { cap.textContent = text; cap.style.opacity = 1; }, REC ? 0 : 180); }
-    }
+    const t = (clock() - adT0) / 1000, u = t % AD_LOOP;
+    adFrame(u);
     if (!ready) {
       const left = Math.max(0, Math.ceil(AD_WAIT - t));
-      document.getElementById('adBar').style.width = Math.min(100, t / AD_WAIT * 100) + '%';
-      document.getElementById('adSec').textContent = left ? left : '✓';
+      document.getElementById('wbwBar').style.width = Math.min(100, t / AD_WAIT * 100) + '%';
+      document.getElementById('wbwSec').textContent = left ? left : '✓';
       adGo.textContent = 'Встать в саф · ' + left;
-      if (t >= AD_WAIT) { ready = true; adGo.disabled = false; adGo.textContent = 'Встать в саф'; document.getElementById('adLbl').textContent = 'Твоё место готово'; }
+      if (t >= AD_WAIT) { ready = true; adGo.disabled = false; adGo.textContent = 'Встать в саф'; document.getElementById('wbwLbl').textContent = 'Твоё место готово'; }
     }
     if (!REC) adRaf = requestAnimationFrame(step);
   };
@@ -1093,9 +1235,10 @@ function setupRecJoin(P) {
   const U = norm(P.get('u') || 'tvoy.nik').replace(/\s+/g, ''), DUA_V = P.get('dua') || 'fam', Q_V = P.get('quran') || 'start';
   const B = Object.assign({
     type0: 0.1, none: 0.8, topOut: 2.0, topIn: 3.5, tapJoin: 3.8, tt: 4.4, type1: 4.7, next: 5.7,
-    duaTap: 7.6, duaGo: 9.4, qTap: 11.4, ad: 12.2, cutAt: 6.0, cutTo: 9.4, goTap: 18.6,
+    duaTap: 7.6, duaGo: 9.4, qTap: 11.4, ad: 12.2, cutAt: 2.80, cutTo: 7.30, goTap: 18.6,
     black: 18.75, fly: 19.05, flyDur: 1.75, letter: 21.2, zoom1: 21.3, wish: 23.3, close: 25.4, pullDur: 2.4, end: 32,
   }, JSON.parse(P.get('b') || '{}'));
+  adLoad();                                      // кадры рекламы декодированы до шага 'ad'
   const CH = 0.075;                              // секунд на символ при наборе
   const TI = N - 1;                              // место в последнем кольце — туда встаёт новый человек
   const taps = window.__taps = [];
