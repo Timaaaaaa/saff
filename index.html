@@ -68,7 +68,7 @@
 
   /* ---------- вступление ---------- */
   .intro {
-    position: fixed; left: 16px; right: 16px; bottom: max(20px, env(safe-area-inset-bottom)); z-index: 15;
+    position: fixed; left: 16px; right: 16px; bottom: max(20px, env(safe-area-inset-bottom), var(--pb, 0px)); z-index: 15;
     max-width: 520px; margin: 0 auto; padding: 22px 22px 18px; border-radius: 20px;
     background: rgba(20,16,36,.86); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(233,196,106,.35); transition: opacity .5s, transform .5s;
@@ -82,14 +82,14 @@
     background: linear-gradient(180deg, #F0CF7C, #D4A43E); color: #2A1E05; font: 700 16px var(--sans); cursor: pointer; text-decoration: none;
   }
   .btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid rgba(233,196,106,.5); height: 46px; font-weight: 600; font-size: 15px; }
-  .hint { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 10; font-size: 12px; color: var(--muted); background: rgba(20,16,36,.7); padding: 6px 12px; border-radius: 99px; white-space: nowrap; opacity: 0; transition: opacity .6s; pointer-events: none; }
+  .hint { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom), var(--pb, 0px)); transform: translateX(-50%); z-index: 10; font-size: 12px; color: var(--muted); background: rgba(20,16,36,.7); padding: 6px 12px; border-radius: 99px; white-space: nowrap; opacity: 0; transition: opacity .6s; pointer-events: none; }
   .hint.on { opacity: 1; }
 
   /* ---------- письмо ---------- */
   .sheet {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; max-height: 88vh; overflow-y: auto;
     transform: translateY(105%); transition: transform .6s cubic-bezier(.2,.8,.2,1);
-    padding: 0 16px max(16px, env(safe-area-inset-bottom));
+    padding: 0 16px max(16px, env(safe-area-inset-bottom), var(--pb, 0px));
   }
   .sheet.on { transform: none; }
   .letter {
@@ -147,7 +147,7 @@
   html.recjoin .letter.recwish .wishes li:not(:first-child) { opacity: .25; }
   html.recjoin .letter.recwish .wishes li:first-child { background: rgba(233,196,106,.32); border-radius: 10px; box-shadow: 0 0 0 2px rgba(217,169,63,.7); font-size: 18.5px; font-weight: 700; }
   .donate { width: 100%; margin-top: 8px; border-color: rgba(184,138,46,.45); color: #7A5A12; }
-  .dn { position: fixed; inset: 0; z-index: 40; display: none; align-items: flex-end; justify-content: center; background: rgba(10,8,20,.55); padding: 0 12px max(12px, env(safe-area-inset-bottom)); }
+  .dn { position: fixed; inset: 0; z-index: 40; display: none; align-items: flex-end; justify-content: center; background: rgba(10,8,20,.55); padding: 0 12px max(12px, env(safe-area-inset-bottom), var(--pb, 0px)); }
   .dn.on { display: flex; }
   .dn-card { width: 100%; max-width: 480px; background: var(--paper); color: var(--paper-ink); border-radius: 20px; padding: 22px 20px 18px; position: relative; border: 1px solid #E8D9B8; }
   .dn-card h3 { font: 700 22px/1.25 var(--serif); margin: 0 0 8px; padding-right: 30px; }
@@ -171,7 +171,7 @@
     .intro p { font-size: 14px; margin-bottom: 14px; }
     .btn { height: 48px; }
     .sheet { max-height: 62vh; max-height: 62dvh; padding: 0; -webkit-overflow-scrolling: touch; }
-    .letter { border-radius: 20px 20px 0 0; padding: 14px 18px max(18px, env(safe-area-inset-bottom)); border-bottom: 0; }
+    .letter { border-radius: 20px 20px 0 0; padding: 14px 18px max(18px, env(safe-area-inset-bottom), var(--pb, 0px)); border-bottom: 0; }
     .letter::before { inset: 6px 6px 0; border-bottom: 0; border-radius: 14px 14px 0 0; }
     .grab { display: block; width: 40px; height: 4px; border-radius: 2px; background: rgba(42,34,22,.2); margin: 0 auto 12px; }
     .close { top: 10px; right: 10px; width: 32px; height: 32px; font-size: 18px; }
@@ -186,7 +186,7 @@
   /* ---------- добавить себя ---------- */
   .intro .btn.ghost { margin-top: 8px; }
   .results .none .btn { margin-top: 10px; height: 44px; font-size: 15px; }
-  .jn { position: fixed; inset: 0; z-index: 42; display: none; align-items: flex-end; justify-content: center; background: rgba(10,8,20,.6); padding: 0 12px max(12px, env(safe-area-inset-bottom)); }
+  .jn { position: fixed; inset: 0; z-index: 42; display: none; align-items: flex-end; justify-content: center; background: rgba(10,8,20,.6); padding: 0 12px max(12px, env(safe-area-inset-bottom), var(--pb, 0px)); }
   .jn.on { display: flex; }
   .jn-card { width: 100%; max-width: 480px; background: var(--paper); color: var(--paper-ink); border-radius: 20px; padding: 20px 20px 18px; position: relative; border: 1px solid #E8D9B8; }
   .jn-dots { display: flex; gap: 6px; margin: 0 0 14px; }
@@ -207,7 +207,7 @@
   .jn-chips button:active { background: #FFF4D6; }
   .jn-fine { font: 400 12px/1.4 var(--sans); color: var(--paper-muted); margin: 12px 0 0; text-align: center; }
   /* 10 секунд о приложении, пока ставим в саф: настоящие кадры Quran Widget 1.27.1 (разбор аята 1:7 по словам) */
-  .wbw { position: fixed; inset: 0; z-index: 44; display: none; flex-direction: column; align-items: center; background: radial-gradient(120% 70% at 50% 0%, #2A2050 0%, var(--night) 60%); padding: max(14px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom)); }
+  .wbw { position: fixed; inset: 0; z-index: 44; display: none; flex-direction: column; align-items: center; background: radial-gradient(120% 70% at 50% 0%, #2A2050 0%, var(--night) 60%); padding: max(14px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom), var(--pb, 0px)); }
   .wbw.on { display: flex; }
   .wbw-top { width: 100%; max-width: 440px; }
   .wbw-lbl { display: flex; justify-content: space-between; font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
@@ -366,6 +366,8 @@ if (webview) document.documentElement.dataset.webview = '1';
 // Открыто из приложения Quran Widget (Инструменты → Саф, с 10.11.2026): кнопки сторов и 10 секунд о приложении не нужны.
 const IN_APP = new URLSearchParams(location.search).has('app');
 if (IN_APP) document.documentElement.dataset.app = '1';
+// pad=<px> — высота плавающей панели приложения снизу: карточка, письмо и подсказка поднимаются над ней (--pb в CSS)
+if (IN_APP) document.documentElement.style.setProperty('--pb', (parseInt(new URLSearchParams(location.search).get('pad')) || 0) + 'px');
 
 /* ================= аналитика: только клики по кнопкам =================
    Все события идут от одного общего device_id, чтобы сайт не создавал «новых пользователей»
@@ -393,7 +395,7 @@ const N = people.length;
 const DONATE = await fetch('donate.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({}));
 const hasDonate = !!(DONATE.kaspi || DONATE.other || DONATE.card);
 const fmt = (n) => n.toLocaleString('ru-RU');
-document.getElementById('count').textContent = `Вокруг Каабы · ${fmt(N)} человек`;
+document.getElementById('count').textContent = IN_APP ? `${fmt(N)} человек` : `Вокруг Каабы · ${fmt(N)} человек`; // в приложении заголовок уже в шапке
 document.getElementById('introN').textContent = `${fmt(N)} человек`;
 function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 function rnd(i, s) { const x = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return x - Math.floor(x); }
