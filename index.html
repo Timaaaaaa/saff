@@ -120,6 +120,8 @@
   .gate { display: none; margin-top: 10px; padding: 12px 14px; border-radius: 12px; background: #FFF4D6; border: 1px solid #EBCF85; font: 400 13.5px/1.45 var(--sans); color: #5A4512; }
   html[data-webview][data-platform="ios"] .gate { display: block; }
   html[data-app] .keep h3, html[data-app] .keep > p, html[data-app] .stores, html[data-app] .gate { display: none !important; }
+  /* Android WebView прячет текст поля с backdrop-filter — в приложении без размытия */
+  html[data-app] .search input { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(20,16,36,.92); }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
   .soft { height: 44px; border-radius: 12px; border: 1px solid rgba(42,34,22,.18); background: transparent; color: var(--paper-ink); font: 600 14px var(--sans); cursor: pointer; }
   .fine { font: 400 12px/1.45 var(--sans); color: var(--paper-muted); margin: 14px 0 0; text-align: center; }
