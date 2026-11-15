@@ -55,7 +55,7 @@
   .results .none:hover { background: none; }
 
   /* ---------- плашки с никами над головами ---------- */
-  #labels { position: fixed; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
+  #labels { position: fixed; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; contain: strict; }
   .tag {
     position: absolute; left: 0; top: 0; transform-origin: 50% 100%;
     padding: 3px 8px; border-radius: 7px; white-space: nowrap;
@@ -92,6 +92,8 @@
     padding: 0 16px max(16px, env(safe-area-inset-bottom), var(--pb, 0px));
   }
   .sheet.on { transform: none; }
+  /* свой слой композиции заранее: в Android WebView лист поверх WebGL иначе перерисовывается и мигает на въезде */
+  .sheet, .dn, .jn { will-change: transform; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
   .letter {
     max-width: 520px; margin: 0 auto; background: var(--paper); color: var(--paper-ink); border-radius: 18px 18px 18px 18px;
     padding: 26px 24px 22px; position: relative; box-shadow: 0 -10px 40px rgba(0,0,0,.45);
@@ -122,6 +124,9 @@
   html[data-app] .keep h3, html[data-app] .keep > p, html[data-app] .stores, html[data-app] .gate { display: none !important; }
   /* Android WebView прячет текст поля с backdrop-filter — в приложении без размытия */
   html[data-app] .search input { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(20,16,36,.92); }
+  /* размытие поверх холста, который перерисовывается 60 раз в секунду, — самая дорогая вещь для WebView: на Android и в приложении без него */
+  html[data-app] .intro, html[data-platform="android"] .intro { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(20,16,36,.95); }
+  html[data-platform="android"] .search input { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(20,16,36,.92); }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
   .soft { height: 44px; border-radius: 12px; border: 1px solid rgba(42,34,22,.18); background: transparent; color: var(--paper-ink); font: 600 14px var(--sans); cursor: pointer; }
   .fine { font: 400 12px/1.45 var(--sans); color: var(--paper-muted); margin: 14px 0 0; text-align: center; }
@@ -405,10 +410,13 @@ function rnd(i, s) { const x = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; ret
 // раскладка: ранние участники ближе к Каабе
 const ring = new Int16Array(N), seat = new Int16Array(N);
 const polar = new Float32Array(N * 4); // r, угол старта, угловая скорость, масштаб
+// паспорт колец: с кого начинается, сколько мест, сдвиг и радиус — по ним ищем, кто рядом с камерой, не перебирая всех
+const ringStart = new Int32Array(1024), ringN = new Int32Array(1024), ringOff = new Float32Array(1024), ringR = new Float32Array(1024);
 {
   let k = 0, i = 0;
   while (i < N) {
     const r = R0 + k * DR, n = Math.floor(2 * Math.PI * r / STEP), off = rnd(k, 5) * Math.PI * 2;
+    ringStart[k] = i; ringN[k] = n; ringOff[k] = off; ringR[k] = r;
     for (let j = 0; j < n && i < N; j++, i++) {
       ring[i] = k; seat[i] = j;
       polar[i * 4] = r + (rnd(i, 6) - 0.5) * 0.22;
@@ -423,7 +431,9 @@ const RINGS = ring[N - 1] + 1, R_MAX = R0 + (RINGS - 1) * DR;
 // ?rec=1 — режим записи ролика: время идёт по кадрам (window.__frame), без rAF и CSS-переходов
 const REC = new URLSearchParams(location.search).has('rec');
 let recMs = 0;
-const clock = () => REC ? recMs : performance.now();
+// время кадра — метка vsync из requestAnimationFrame, а не момент, когда до нас дошёл JS: шаги людей ровные даже при подлагивании
+let frameTs = 0;
+const clock = () => REC ? recMs : (frameTs || performance.now());
 const T0 = clock();
 const now = () => (clock() - T0) / 1000;
 // где человек сейчас: x, z и угол (против часовой, вид сверху)
@@ -439,7 +449,7 @@ const isMobile = matchMedia('(pointer: coarse)').matches || innerWidth < 760;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: devicePixelRatio < 2, powerPreference: 'high-performance' });
 let dpr = new URLSearchParams(location.search).has('rec') ? 2 : Math.min(devicePixelRatio, isMobile ? 1.25 : 2);
 renderer.setPixelRatio(dpr);
-window.__saff = { renderer, get level() { return level; } };
+window.__saff = { renderer, get level() { return level; }, get near() { return nearCount; }, get labels() { return byPerson.size; } };
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -552,11 +562,12 @@ function cloth(rTop, rBot, h, folds = 9, amp = 0.04, seg = 18, hs = 3, open = fa
   return g;
 }
 const at = (g, x, y, z, rx = 0, rz = 0, s = null) => { if (s) g.scale(...s); if (rx) g.rotateX(rx); if (rz) g.rotateZ(rz); g.translate(x, y, z); return g; };
-const strip = (g) => { g.deleteAttribute('uv'); return g.index ? g.toNonIndexed() : g; };
+// индексы не разворачиваем: общая вершина считается один раз, а не в каждом треугольнике (в ~3 раза меньше работы видеокарте)
+const strip = (g) => { g.deleteAttribute('uv'); return g; };
 // белые одежды ихрама, голова покрыта тканью; лиц нет. Человек смотрит в -z.
 // Телефон: толпа из ~1 900 человек — главная нагрузка. Там одна низкополигональная модель (~110 треугольников вместо ~1 050),
 // без кистей и теней и на дешёвом освещении Lambert. Найденный человек всегда в полной детализации.
-const LOW = isMobile && !REC;
+const LOW = (isMobile || new URLSearchParams(location.search).has('low')) && !REC;   // ?low=1 — проверить телефонный режим на компьютере
 const robeLow = mergeGeometries([
   at(cloth(0.235, 0.33, 0.92, 4, 0.05, 9, 1, true), 0, 0.51, 0),
   at(cloth(0.21, 0.245, 0.5, 3, 0.03, 8, 1, true), 0, 1.2, 0),
@@ -580,14 +591,20 @@ const skinGeo = mergeGeometries([
 ].map(strip));
 const shadowGeo = new THREE.CircleGeometry(0.36, 16); shadowGeo.rotateX(-Math.PI / 2); shadowGeo.translate(0, 0.12, 0.02);
 
+// Двор на 15 тысяч человек рисуется в два слоя (LOD):
+//  • дальний слой — все N одной крошечной фигурой (~27 вершин: роба + голова), издалека человек всё равно пара пикселей;
+//  • ближний слой — до NEAR_MAX ближайших к камере в нормальной модели. Кого брать, решает selectNear() по паспорту колец
+//    (смотрит только кольца и места рядом с камерой, а не всех), раз в несколько кадров. Тот, кто попал в ближний слой,
+//    в дальнем схлопывается в точку (атрибут aNear), поэтому двойников и дыр нет.
+// Движение по-прежнему целиком в шейдере, CPU позиции людей не пересчитывает. В режиме записи (rec) — как раньше, все в полной модели.
 const uTime = { value: 0 };
 const polarAttr = new THREE.InstancedBufferAttribute(polar, 4);
-function tawaf(mat) {
+function tawaf(mat, far = false) {
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uTime = uTime;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>
-        attribute vec4 aPolar; uniform float uTime;
+        attribute vec4 aPolar; uniform float uTime;${far ? ' attribute float aNear;' : ''}
         float twTh(){ return aPolar.y + aPolar.z * uTime; }
         vec3 twRot(vec3 v){ float t = twTh(); float c = cos(t), s = sin(t); return vec3(v.x*c + v.z*s, v.y, -v.x*s + v.z*c); }`)
       .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
@@ -595,32 +612,118 @@ function tawaf(mat) {
       .replace('#include <begin_vertex>', `#include <begin_vertex>
         { float t = twTh();
           transformed = twRot(transformed * aPolar.w);
-          transformed += vec3(aPolar.x * cos(t), abs(sin(uTime * 3.6 + aPolar.y * 17.0)) * 0.035, -aPolar.x * sin(t)); }`);
+          transformed += vec3(aPolar.x * cos(t), abs(sin(uTime * 3.6 + aPolar.y * 17.0)) * 0.035, -aPolar.x * sin(t));
+          ${far ? 'if (aNear > 0.5) transformed = vec3(0.0);' : ''} }`);
   };
+  // у ближнего и дальнего слоя одинаковый текст onBeforeCompile — без своего ключа three.js отдал бы им одну программу
+  mat.customProgramCacheKey = () => far ? 'tawaf-far' : 'tawaf-near';
   return mat;
 }
+const LOD = !REC;
+const NEAR_MAX = LOW ? 1600 : 2500;          // сколько ближайших людей рисовать в полной модели
 const Mat = LOW ? THREE.MeshLambertMaterial : THREE.MeshStandardMaterial;
 const mats = {
   robe: tawaf(new Mat(LOW ? {} : { roughness: 0.82 })),
   skin: tawaf(new Mat(LOW ? {} : { roughness: 0.7 })),
   shadow: tawaf(new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.16, depthWrite: false })),
+  far: tawaf(new THREE.MeshLambertMaterial(), true),
 };
-const inst = {};
 const col = new THREE.Color();
+const robeCol = new Float32Array(N * 3), skinCol = new Float32Array(N * 3);
+for (let i = 0; i < N; i++) {
+  col.set(IHRAM[Math.floor(rnd(i, 1) * IHRAM.length)]); robeCol[i * 3] = col.r; robeCol[i * 3 + 1] = col.g; robeCol[i * 3 + 2] = col.b;
+  col.set(SKINS[Math.floor(rnd(i, 2) * SKINS.length)]); skinCol[i * 3] = col.r; skinCol[i * 3 + 1] = col.g; skinCol[i * 3 + 2] = col.b;
+}
+const inst = {};
 const crowdRobe = LOW ? robeLow : robeGeo;
+const CAP = LOD ? NEAR_MAX : N;
+const nearPolar = LOD ? new Float32Array(NEAR_MAX * 4) : polar;
+const nearPolarAttr = LOD ? new THREE.InstancedBufferAttribute(nearPolar, 4).setUsage(THREE.DynamicDrawUsage) : polarAttr;
 for (const [k, geo] of [['robe', crowdRobe], ['skin', skinGeo], ['shadow', shadowGeo]]) {
   if (LOW && k !== 'robe') continue;
-  geo.setAttribute('aPolar', polarAttr);
-  const m = new THREE.InstancedMesh(geo, mats[k], N);
+  const g = geo.clone();                       // своя копия: robeGeo ещё нужен золотому силуэту
+  g.setAttribute('aPolar', nearPolarAttr);
+  const m = new THREE.InstancedMesh(g, mats[k], CAP);
   m.frustumCulled = false;
+  if (k !== 'shadow') { m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(CAP * 3), 3).setUsage(THREE.DynamicDrawUsage); }
+  if (LOD) m.count = 0;
   inst[k] = m; scene.add(m);
 }
-for (let i = 0; i < N; i++) {
-  inst.robe.setColorAt(i, col.set(IHRAM[Math.floor(rnd(i, 1) * IHRAM.length)]));
-  if (inst.skin) inst.skin.setColorAt(i, col.set(SKINS[Math.floor(rnd(i, 2) * SKINS.length)]));
+if (!LOD) {
+  inst.robe.instanceColor.array.set(robeCol); inst.robe.instanceColor.needsUpdate = true;
+  if (inst.skin) { inst.skin.instanceColor.array.set(skinCol); inst.skin.instanceColor.needsUpdate = true; }
 }
-inst.robe.instanceColor.needsUpdate = true;
-if (inst.skin) inst.skin.instanceColor.needsUpdate = true;
+// дальний слой
+const aNear = new Float32Array(N);
+const aNearAttr = new THREE.InstancedBufferAttribute(aNear, 1).setUsage(THREE.DynamicDrawUsage);
+if (LOD) {
+  const farGeo = mergeGeometries([
+    at(new THREE.CylinderGeometry(0.2, 0.31, 1.5, 5, 1, true), 0, 0.76, 0),
+    at(new THREE.SphereGeometry(0.155, 4, 2), 0, 1.68, 0.02),
+  ].map(strip));
+  farGeo.setAttribute('aPolar', polarAttr);
+  farGeo.setAttribute('aNear', aNearAttr);
+  const far = new THREE.InstancedMesh(farGeo, mats.far, N);
+  far.frustumCulled = false;
+  far.instanceColor = new THREE.InstancedBufferAttribute(robeCol, 3);
+  inst.far = far; scene.add(far);
+}
+
+// Кто рядом с камерой. Люди кольца k стоят по местам j = 0..n-1 с шагом 2π/n и все вращаются почти с одной скоростью WALK/r,
+// поэтому место под углом φ в момент t — это j ≈ (φ − сдвиг − ωt) / шаг. Для каждого кольца в пределах радиуса берём только
+// дугу мест, которую видно из камеры, + запас на разбег скоростей (у каждого свой r ±0,11).
+const nearIdx = new Int32Array(NEAR_MAX), nearKey = new Float64Array(N);
+let nearCount = 0, nearR = LOW ? 26 : 34;
+const nearCam = new THREE.Vector3(1e9, 0, 0);
+let nearFrame = -999;
+function selectNear(t) {
+  const cx = camera.position.x, cy = camera.position.y, cz = camera.position.z;
+  nearCam.copy(camera.position); nearFrame = frame;
+  const h2 = nearR * nearR - cy * cy;
+  let m = 0;
+  if (h2 > 0) {
+    const h = Math.sqrt(h2), rc = Math.hypot(cx, cz), phc = Math.atan2(-cz, cx);
+    for (let k = 0; k < RINGS; k++) {
+      const r = ringR[k];
+      if (r < rc - h - 0.3 || r > rc + h + 0.3) continue;
+      const n = ringN[k], s0 = ringStart[k], stepA = 2 * Math.PI / n;
+      let j0 = 0, j1 = n - 1;
+      if (rc > 0.5) {
+        const c = (r * r + rc * rc - h * h) / (2 * r * rc);
+        if (c > 1.0001) continue;
+        if (c > -1) {
+          const half = Math.acos(Math.min(1, c)) + 0.3 / r;
+          const drift = WALK * t * 0.12 / (r * r) + 0.4;      // разбег за время t, в радианах, с запасом
+          const jc = (phc - ringOff[k] - (WALK / r) * t) / stepA, w = (half + drift) / stepA + 1;
+          if (2 * w + 1 < n) { j0 = Math.floor(jc - w); j1 = Math.ceil(jc + w); }
+        }
+      }
+      for (let jj = j0; jj <= j1; jj++) {
+        const i = s0 + (((jj % n) + n) % n);
+        if (i >= N || (i >= s0 + n)) continue;
+        where(i, t, W2);
+        const dx = W2.x - cx, dz = W2.z - cz, d2 = dx * dx + dz * dz;
+        if (d2 < h2) nearKey[m++] = Math.floor(d2 * 256) * 65536 + i;   // расстояние и номер в одном числе — сортируем без объектов
+      }
+    }
+  }
+  let keys = nearKey.subarray(0, m);
+  if (m > 1) keys.sort();
+  const cnt = Math.min(m, NEAR_MAX);
+  // снять отметку со старых, поставить новым
+  for (let q = 0; q < nearCount; q++) aNear[nearIdx[q]] = 0;
+  for (let q = 0; q < cnt; q++) {
+    const i = keys[q] % 65536; nearIdx[q] = i; aNear[i] = 1;
+    nearPolar.set(polar.subarray(i * 4, i * 4 + 4), q * 4);
+    inst.robe.instanceColor.array.set(robeCol.subarray(i * 3, i * 3 + 3), q * 3);
+    if (inst.skin) inst.skin.instanceColor.array.set(skinCol.subarray(i * 3, i * 3 + 3), q * 3);
+  }
+  nearCount = cnt;
+  for (const k of ['robe', 'skin', 'shadow']) if (inst[k]) inst[k].count = cnt;
+  nearPolarAttr.needsUpdate = true; aNearAttr.needsUpdate = true;
+  inst.robe.instanceColor.needsUpdate = true;
+  if (inst.skin) inst.skin.instanceColor.needsUpdate = true;
+}
 
 // найденный: золотой силуэт, луч, кольцо на полу (двигаются вместе с ним)
 const glowMat = new THREE.MeshStandardMaterial({ color: '#F3D48A', emissive: '#E9C46A', emissiveIntensity: 1.2, transparent: true, opacity: 0, depthWrite: false });
@@ -676,54 +779,97 @@ function flyTo(getEnd, dur = 2.2, arc = 0, onDone = null) {
 canvas.addEventListener('pointerdown', () => { if (!fly) follow = -1; });
 
 /* ================= плашки ================= */
+// Имена только у ближайших (MAXL), и каждое имя привязано к своему человеку: плашка не перескакивает на соседа,
+// а появляется и гаснет плавно. Позиции считаются каждый кадр, но только для ~60 ближайших из ближнего слоя (selectNear),
+// а не для всех 15 тысяч. В DOM пишется только то, что изменилось.
 const labelsEl = document.getElementById('labels');
-const POOL = innerWidth < 560 ? 18 : 48;
-const tags = Array.from({ length: POOL }, () => { const d = document.createElement('div'); d.className = 'tag'; labelsEl.appendChild(d); return d; });
+const SMALL = innerWidth < 560;
+const MAXL = SMALL ? 8 : 22;
+const POOL = MAXL + 10;                                  // запас на имена, которые ещё гаснут
+const tags = Array.from({ length: POOL }, () => {
+  const el = document.createElement('div'); el.className = 'tag'; labelsEl.appendChild(el);
+  return { el, i: -1, a: 0, want: 0, x: 0, y: 0, s: 1, o: -1, tf: '' };
+});
 const meTag = document.createElement('div'); meTag.className = 'tag me'; labelsEl.appendChild(meTag);
 const handle = (p) => p[0] ? '@' + p[0] : p[1];
 let found = -1;
 const proj = new THREE.Vector3();
-const PX = new Float32Array(N), PZ = new Float32Array(N), D2 = new Float32Array(N), order = new Uint16Array(N);
+const byPerson = new Map();                              // человек → его плашка
+const LBL_CAND = 60;
+const boxes = [];
+function placeTag(T) {
+  const tf = `translate(-50%, -100%) translate3d(${T.x.toFixed(1)}px, ${T.y.toFixed(1)}px, 0) scale(${T.s.toFixed(3)})`;
+  if (tf !== T.tf) { T.tf = tf; T.el.style.transform = tf; }
+  const o = Math.round(T.a * 40) / 40;
+  if (o !== T.o) { T.o = o; T.el.style.opacity = String(o); }
+}
 function updateLabels(t) {
   const W = innerWidth, H = innerHeight;
   const dist = camera.position.distanceTo(controls.target);
+  const cx = camera.position.x, cz = camera.position.z;
+  const maxD = SMALL ? (dist < 14 ? 8 : 13) : (dist < 14 ? 13 : 22);
+  for (const T of tags) T.want = 0;
+  boxes.length = 0;
   let used = 0;
-  if (dist < 36) {
-    const cx = camera.position.x, cz = camera.position.z;
-    const maxD2 = innerWidth < 560 ? (dist < 14 ? 9 : 18) ** 2 : (dist < 14 ? 15 : 26) ** 2;
-    let m = 0;
-    for (let i = 0; i < N; i++) {
-      where(i, t, W2); PX[i] = W2.x; PZ[i] = W2.z;
-      const dx = W2.x - cx, dz = W2.z - cz, d2 = dx * dx + dz * dz;
-      if (d2 < maxD2 && i !== found) { D2[i] = d2; order[m++] = i; }
-    }
-    const cand = Array.from(order.subarray(0, m)).sort((a, b) => D2[a] - D2[b]);
-    const boxes = [];
-    for (const i of cand) {
-      if (used >= POOL) break;
-      proj.set(PX[i], 2.1, PZ[i]).project(camera);
-      if (proj.z > 1 || proj.x < -1.1 || proj.x > 1.1 || proj.y < -1.1 || proj.y > 1.1) continue;
-      const sx = (proj.x + 1) / 2 * W, sy = (1 - proj.y) / 2 * H, d = Math.sqrt(D2[i]);
-      const scale = THREE.MathUtils.clamp(9 / d, 0.55, 1.15);
-      const w = 70 * scale, h = 22 * scale;
-      if (boxes.some(b => Math.abs(b[0] - sx) < (b[2] + w) / 2 && Math.abs(b[1] - sy) < (b[3] + h) / 2)) continue;
-      boxes.push([sx, sy, w, h]);
-      const el = tags[used++], txt = handle(people[i]);
-      if (el.textContent !== txt) el.textContent = txt;
-      el.style.display = 'block';
-      el.style.transform = `translate(-50%, -100%) translate(${sx}px, ${sy}px) scale(${scale})`;
-      el.style.opacity = String(THREE.MathUtils.clamp(1.4 - d / Math.sqrt(maxD2), 0.35, 1));
+  if (dist < 36 && nearCount) {
+    const L = Math.min(nearCount, LBL_CAND);
+    // два прохода: сначала те, чьё имя уже горит (они держат место), потом новые по близости
+    for (let pass = 0; pass < 2 && used < MAXL; pass++) {
+      for (let q = 0; q < L && used < MAXL; q++) {
+        const i = nearIdx[q];
+        if (i === found) continue;
+        const had = byPerson.get(i);
+        if ((pass === 0) !== !!had) continue;
+        where(i, t, W2);
+        const dx = W2.x - cx, dz = W2.z - cz, d = Math.sqrt(dx * dx + dz * dz);
+        if (d > maxD * (had ? 1.15 : 1)) continue;       // гистерезис: на границе имя не мигает
+        proj.set(W2.x, 2.1, W2.z).project(camera);
+        if (proj.z > 1 || proj.x < -1.05 || proj.x > 1.05 || proj.y < -1.05 || proj.y > 1.1) continue;
+        const sx = (proj.x + 1) / 2 * W, sy = (1 - proj.y) / 2 * H;
+        const scale = THREE.MathUtils.clamp(9 / Math.max(d, 0.1), 0.55, 1.15), w = 70 * scale, h = 22 * scale;
+        const k = had ? 0.75 : 1;                         // уже показанным разрешаем лёгкое касание соседей
+        let hit = false;
+        for (let b = 0; b < boxes.length; b += 4) if (Math.abs(boxes[b] - sx) < (boxes[b + 2] + w) / 2 * k && Math.abs(boxes[b + 1] - sy) < (boxes[b + 3] + h) / 2 * k) { hit = true; break; }
+        if (hit) continue;
+        let T = had;
+        if (!T) {
+          T = tags.find(x => x.i < 0);
+          if (!T) break;
+          T.i = i; T.a = 0; T.o = -1; T.tf = ''; byPerson.set(i, T);
+          const txt = handle(people[i]);
+          if (T.el.textContent !== txt) T.el.textContent = txt;
+          T.el.style.display = 'block';
+        }
+        boxes.push(sx, sy, w, h);
+        T.want = THREE.MathUtils.clamp(1.4 - d / maxD, 0.4, 1); T.x = sx; T.y = sy; T.s = scale;
+        used++;
+      }
     }
   }
-  for (let k = used; k < POOL; k++) tags[k].style.display = 'none';
+  for (const T of tags) {
+    if (T.i < 0) continue;
+    T.a += (T.want - T.a) * 0.2;
+    if (T.want === 0) {
+      if (T.a < 0.03) { T.el.style.display = 'none'; byPerson.delete(T.i); T.i = -1; T.a = 0; continue; }
+      where(T.i, t, W2); proj.set(W2.x, 2.1, W2.z).project(camera);   // гаснущее имя продолжает идти за человеком
+      if (proj.z < 1) { T.x = (proj.x + 1) / 2 * W; T.y = (1 - proj.y) / 2 * H; } else T.a = 0;
+    }
+    placeTag(T);
+  }
+}
+let meTf = '', meShown = false;
+function updateMeTag(t) {
+  let show = false;
   if (found >= 0) {
     where(found, t, W2);
     proj.set(W2.x, 2.25, W2.z).project(camera);
     if (proj.z < 1) {
-      meTag.style.display = 'block';
-      meTag.style.transform = `translate(-50%, -100%) translate(${(proj.x + 1) / 2 * W}px, ${(1 - proj.y) / 2 * H}px)`;
-    } else meTag.style.display = 'none';
-  } else meTag.style.display = 'none';
+      show = true;
+      const tf = `translate(-50%, -100%) translate3d(${((proj.x + 1) / 2 * innerWidth).toFixed(1)}px, ${((1 - proj.y) / 2 * innerHeight).toFixed(1)}px, 0)`;
+      if (tf !== meTf) { meTf = tf; meTag.style.transform = tf; }
+    }
+  }
+  if (show !== meShown) { meShown = show; meTag.style.display = show ? 'block' : 'none'; }
 }
 
 /* ================= письмо ================= */
@@ -1125,19 +1271,21 @@ addEventListener('resize', () => { applyAspect(); renderer.setSize(innerWidth, i
 if (window.visualViewport) visualViewport.addEventListener('resize', () => { resEl.style.maxHeight = Math.max(160, visualViewport.height - 130) + 'px'; });
 let frame = 0, lastF = null;
 // Подстройка под телефон: каждые 60 кадров меряем время кадра; если тяжело — ступенями снижаем нагрузку:
-// 1) разрешение 1×, 2) 30 кадров в секунду и плашки реже. Обратно не поднимаем, чтобы не мигало.
-let perfN = 0, perfT0 = clock(), level = 0, lastTs = 0;
-const labelEvery = () => (REC ? 1 : level >= 2 ? 3 : isMobile ? 2 : 1);
+// 1) разрешение 1×, 2) ближний слой меньше (меньше людей в полной модели), 3) ровно 30 кадров в секунду.
+// Обратно не поднимаем, чтобы картинка не прыгала.
+let perfN = 0, perfT0 = 0, level = 0, lastTs = 0;
 function tick(ts) {
-  if (!REC) requestAnimationFrame(tick);
-  if (level >= 2 && ts - lastTs < 30) return;   // ограничение 30 к/с
+  if (!REC) { requestAnimationFrame(tick); frameTs = ts; }
+  // 30 к/с: допуск 4 мс, иначе из-за дрожания меток vsync кадры шли бы через 33 и 50 мс вперемешку (рывки)
+  if (level >= 3 && ts - lastTs < 29) return;
   lastTs = ts;
   if (pendingLetter && clock() >= pendingLetter.at) { const pl = pendingLetter; pendingLetter = null; openLetter(pl.i); }
   if (!REC && ++perfN % 60 === 0) {
-    const ms = (clock() - perfT0) / 60; perfT0 = clock();
-    if (perfN > 60 && ms > (level >= 2 ? 40 : 22)) {
-      if (level === 0 && dpr > 1) { dpr = 1; renderer.setPixelRatio(1); renderer.setSize(innerWidth, innerHeight, false); level = 1; }
-      else if (level <= 1) level = 2;
+    const ms = (ts - perfT0) / 60; perfT0 = ts;
+    if (perfN > 120 && ms > (level >= 3 ? 40 : 22)) {
+      if (level === 0) { level = 1; if (dpr > 1) { dpr = 1; renderer.setPixelRatio(1); renderer.setSize(innerWidth, innerHeight, false); } }
+      else if (level === 1) { level = 2; nearR *= 0.72; nearFrame = -999; }
+      else if (level === 2) level = 3;
     }
   }
   const t = now();
@@ -1175,7 +1323,11 @@ function tick(ts) {
     halo.material.opacity = o * (0.9 - (p % 1.6) / 1.6 * 0.9);
     halo.scale.setScalar(1 + (p % 1.6) * 0.9);
   }
-  if (frame++ % labelEvery() === 0) updateLabels(t);
+  // ближний слой: пересобираем, когда камера заметно сдвинулась (не чаще раза в 3 кадра) или раз в 20 кадров
+  if (LOD && (frame - nearFrame >= 20 || (frame - nearFrame >= 3 && camera.position.distanceToSquared(nearCam) > 0.36))) selectNear(t);
+  frame++;
+  updateLabels(t);
+  updateMeTag(t);
   renderer.render(scene, camera);
 }
 if (!REC) requestAnimationFrame(tick);
